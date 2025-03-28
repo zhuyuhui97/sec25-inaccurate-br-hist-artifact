@@ -2,7 +2,6 @@
 #include <unistd.h>
 #include <assert.h>
 #include "jit_utils.h"
-#include "asm_snippets.h"
 #include "targets.h"
 
 uint64_t os_page_size;

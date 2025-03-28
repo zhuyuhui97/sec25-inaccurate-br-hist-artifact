@@ -1,6 +1,5 @@
 #include <stdint.h>
 #include "c_snippets.h"
-#include "targets.h"
 #include "sc_utils.h"
 #include "jit_utils.h"
 
