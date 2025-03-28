@@ -30,7 +30,6 @@ typedef struct
     typedef rettype (*x##_t)(__VA_ARGS__);      \
     JIT_SNIPPET_OBJ(x, (void*)&x, (void*)&__##x##_align, (void*)&__##x##_end)
 
-// JIT_ALIGNED_SNIPPET_SYMBOLS(void, jit_populate_phr, void *ret_trampoline, uint64_t *ret_offsets, uint64_t ret_offsets_len, uint64_t bhb_populate_param);
 JIT_ALIGNED_SNIPPET_SYMBOLS(void, jit_br_and_inc_idx, uint64_t *offsets, uint64_t idx);
 
 JIT_SNIPPET_SYMBOLS(void, jit_ret, void);

@@ -14,7 +14,6 @@ void populate_bhb_bcond(int nr_iter)
 
 void t_leak(register char *frbuf, register uint8_t *secret_ptr)
 {
-    // MEM_ACCESS(&frbuf[(*secret_ptr) * SIZE_CACHE_STRIDE]);
     MEM_ACCESS(SC_ENCODE_ADDR(frbuf, secret_ptr));
     NOP(32);
 }

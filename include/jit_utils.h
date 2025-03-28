@@ -11,12 +11,6 @@
 #include "asm_snippets.h"
 #include "inline_asm.h"
 
-// #define IB_RET_MEM_RANGE    16
-
-// #define RECV_INTERVAL       32
-// #define RECV_ROUNDS         8
-// #define RECV_MISPRED_TESTS  (RECV_ROUNDS * RECV_INTERVAL)
-
 #define BASE_BTB_EVICT      VOIDPTR(0x6000000)
 #define BASE_BHB_POPULATE   VOIDPTR(0x7000000)
 #define BASE_RET_MEM        VOIDPTR(0xf00000)

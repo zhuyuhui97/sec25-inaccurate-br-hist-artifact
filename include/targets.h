@@ -18,12 +18,6 @@
 #define OPCODE_SIZE_RET             OPCODE_SIZE
 #define SIZE_CACHE_STRIDE           256
 
-// #ifdef DBG_PMU_EL0
-// #define IB_FAST_THRESHOLD IB_FAST_THRESHOLD_PMU_EL0
-// #else
-// #define IB_FAST_THRESHOLD IB_FAST_THRESHOLD_POSIX
-// #endif
-
 #if defined imx8 // Cortex-A72
 
 #define VA_BITS                     (40)

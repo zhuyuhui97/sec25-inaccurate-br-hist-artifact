@@ -8,9 +8,6 @@
 #define NOP(x) __NOP(x, 0)
 #define NOP_PADDING(x) __NOP(x, OPCODE_ADDR_ALIGN) // TODO: Architecture-specific code, rewrite this when porting to x86 or other architectures!
 
-// return an address for an IB that leaves a footprint of dst='0b??'
-// #define RET_MEM_WRITE_IBHB(x) (mem_ret + (x << PATH_FP_DST_LSH))
-
 #define OPS_BARRIER(x) \
             asm volatile("dsb sy");\
             asm volatile("isb");\
