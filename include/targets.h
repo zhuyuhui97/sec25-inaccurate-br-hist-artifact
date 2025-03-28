@@ -78,7 +78,7 @@
 #define PATH_FP_DST_BITS            (7)
 #define BHB_LENGTH_PATH_FP_DST      (16)
 #define COND_FP                     (false)
-#define COND_FP_BITS                (0)
+#define COND_FP_BITS                (512)
 #define BST_IDX_MSB                 (24)
 #define BST_IDX_LSB                 (2)
 #define BST_WAYS                    (8)

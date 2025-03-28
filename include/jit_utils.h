@@ -50,6 +50,34 @@ typedef struct
     jit_mem_obj_t *jit_mem;
 } trampoline_obj_t;
 
+enum test_type {
+    TEST_SPEC_V2,
+    TEST_SPEC_NO_BSE,
+    TEST_SPEC_BSE,
+    NR_TESTS,
+};
+
+typedef struct {
+    branch_chain_t *bh_chain_p;
+    void *ib_target;
+    uint64_t **bh_targets_p;
+    uint64_t nr_cond_bh;
+    void **ib_ptr_p;
+    char **frbuf_p;
+    char *ptr_secret;
+} bh_chain_params_t;
+
+typedef struct {
+    enum test_type test_spec;
+    uint64_t nr_test_passes;
+    uint64_t nr_train_passes;
+    uint64_t nr_trains;
+    bh_chain_params_t** trains;
+    bh_chain_params_t* test;
+    void (*before_train)(void);
+    void (*before_test)(void);
+} test_obj_t;
+
 jit_mem_obj_t *reg_jit_mem(void* entry, void* addr, uint64_t size, enum ALLOC_METHOD method);
 void free_jit_mem(jit_mem_obj_t *obj);
 trampoline_obj_t* prep_trampoline(snippet_obj_t *jump, snippet_obj_t *padding, int jump_interval, int offset, register void *req_base_addr, int mem_size);

