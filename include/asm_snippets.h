@@ -1,0 +1,42 @@
+#include <stdint.h>
+#ifndef __JIT_SNIPPETS_H__
+#define __JIT_SNIPPETS_H__
+
+typedef struct 
+{
+    void *entry;
+    void *align;
+    void *end;
+} snippet_obj_t;
+
+#define JIT_SNIPPET_LENGTH(x) (uint64_t)&__##x##_end - (uint64_t)&x
+#define JIT_SNIPPET_ALIGN_OFFSET(x) (uint64_t)&__##x##_align - (uint64_t)&x
+#define JIT_SNIPPET_OBJ(name, __entry, __align, __end) \
+    static snippet_obj_t name##_obj = {            \
+        .entry = __entry,                     \
+        .align = __align,         \
+        .end = __end,             \
+    };
+
+#define JIT_SNIPPET_SYMBOLS(rettype, x, ...)    \
+    extern rettype  x(__VA_ARGS__);             \
+    extern void  __##x##_end(void);             \
+    typedef rettype (*x##_t)(__VA_ARGS__);      \
+    JIT_SNIPPET_OBJ(x, (void*)&x, (void*)&x, (void*)&__##x##_end)
+#define JIT_ALIGNED_SNIPPET_SYMBOLS(rettype, x, ...)    \
+    extern rettype  x(__VA_ARGS__);             \
+    extern void  __##x##_align(void);           \
+    extern void  __##x##_end(void);             \
+    typedef rettype (*x##_t)(__VA_ARGS__);      \
+    JIT_SNIPPET_OBJ(x, (void*)&x, (void*)&__##x##_align, (void*)&__##x##_end)
+
+JIT_ALIGNED_SNIPPET_SYMBOLS(void, jit_populate_phr, void *ret_trampoline, uint64_t *ret_offsets, uint64_t ret_offsets_len, uint64_t bhb_populate_param);
+JIT_ALIGNED_SNIPPET_SYMBOLS(void, jit_br_and_inc_idx, uint64_t *offsets, uint64_t idx);
+
+JIT_SNIPPET_SYMBOLS(void, jit_ret, void);
+JIT_SNIPPET_SYMBOLS(void, jit_nop, void);
+JIT_SNIPPET_SYMBOLS(void, asm_br, uint64_t, uint64_t, uint64_t, uint64_t);
+
+typedef void (*branch_chain_t)(uint64_t *offsets, uint64_t idx, uint64_t* ram_params, void **ib_ptr, void *frbuf, void *ptr_secret);
+
+#endif

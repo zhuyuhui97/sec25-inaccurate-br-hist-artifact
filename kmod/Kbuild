@@ -1,0 +1,2 @@
+obj-m := bh-poc.o
+bh-poc-objs := main.o ../snippets.o
