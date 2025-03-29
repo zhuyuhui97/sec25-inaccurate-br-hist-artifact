@@ -68,6 +68,8 @@ typedef struct {
     uint64_t nr_trains;
     bh_chain_params_t** trains;
     bh_chain_params_t* test;
+    uint64_t nr_dc_flush;
+    void **dc_flush_p;
     void (*before_train)(void);
     void (*before_test)(void);
 } test_obj_t;

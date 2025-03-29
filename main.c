@@ -72,6 +72,7 @@ static bh_chain_params_t chain_mispred = {
 };
 
 static bh_chain_params_t *train_passes[2] = {&chain_leak, &chain_safe};
+static void *dc_flush_ibptr[1] = {&ib_ptr};
 
 static test_obj_t test_spec_specv2 = {
     .test_spec = TEST_SPEC_V2,
@@ -80,6 +81,8 @@ static test_obj_t test_spec_specv2 = {
     .nr_trains = 1,
     .trains = (bh_chain_params_t**)train_passes,
     .test = &chain_mispred,
+    .nr_dc_flush = 0,
+    .dc_flush_p = (void **)&dc_flush_ibptr,
     .before_train = &init_btb_targets,
     .before_test = &t_empty
 };
@@ -91,6 +94,8 @@ static test_obj_t test_spec_bse_no_ev = {
     .nr_trains = 1,
     .trains = (bh_chain_params_t**)train_passes,
     .test = &chain_safe,
+    .nr_dc_flush = 0,
+    .dc_flush_p = (void **)&dc_flush_ibptr,
     .before_train = &init_btb_targets,
     .before_test = &t_empty
 };
@@ -102,6 +107,8 @@ static test_obj_t test_spec_bse = {
     .nr_trains = 1,
     .trains = (bh_chain_params_t**)train_passes,
     .test = &chain_safe,
+    .nr_dc_flush = 0,
+    .dc_flush_p = (void **)&dc_flush_ibptr,
     .before_train = &init_btb_targets,
     .before_test = &walk_btb_evset
 };
@@ -184,6 +191,10 @@ void do_spectre_test(test_obj_t test_specs)
 
         FLUSH_DCACHE(ib_ptr_p);
         FLUSH_DCACHE(SC_ENCODE_ADDR(_frbuf, ptr_secret));
+        for (int i = 0; i<test_specs.nr_dc_flush; i++)
+            FLUSH_DCACHE(test_specs.dc_flush_p[i]);
+        OPS_BARRIER(0x10);
+    
         goto_chain(bh_chain, bh_targets, ib_ptr_p, nr_cond_bh, _frbuf, ptr_secret);
         
         // Decode side channel to see if we have made it!
