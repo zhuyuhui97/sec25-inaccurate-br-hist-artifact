@@ -59,6 +59,8 @@ typedef struct {
     void **ib_ptr_p;
     char **frbuf_p;
     char *ptr_secret;
+    uint64_t ex_argc;
+    char **ex_argv;
 } bh_chain_params_t;
 
 typedef struct {

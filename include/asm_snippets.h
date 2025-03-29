@@ -36,6 +36,6 @@ JIT_SNIPPET_SYMBOLS(void, jit_ret, void);
 JIT_SNIPPET_SYMBOLS(void, jit_nop, void);
 JIT_SNIPPET_SYMBOLS(void, asm_br, uint64_t, uint64_t, uint64_t, uint64_t);
 
-typedef void (*branch_chain_t)(uint64_t *offsets, uint64_t idx, uint64_t* ram_params, void **ib_ptr, void *frbuf, void *ptr_secret);
+typedef void (*branch_chain_t)(uint64_t *offsets, uint64_t idx, char** argv, void **ib_ptr, void *frbuf, void *ptr_secret);
 
 #endif
