@@ -76,7 +76,7 @@ trampoline_obj_t* prep_trampoline(snippet_obj_t *jump, snippet_obj_t *padding, i
     return result;
 }
 
-void* prep_aligned_snippet(snippet_obj_t *jump, void *target, uint64_t nr_const_lsb)
+trampoline_obj_t* prep_aligned_snippet(snippet_obj_t *jump, void *target, uint64_t nr_const_lsb)
 {
     if (os_page_size==0) os_page_size = getpagesize();
     trampoline_obj_t *result = NULL;
