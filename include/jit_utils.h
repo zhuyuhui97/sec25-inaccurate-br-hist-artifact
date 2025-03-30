@@ -82,6 +82,7 @@ trampoline_obj_t* prep_trampoline(snippet_obj_t *jump, snippet_obj_t *padding, i
 void free_trampoline(trampoline_obj_t *obj);
 
 uint64_t *prep_jmp_targets(uint64_t *offsets, int len, trampoline_obj_t trampoline);
+void* prep_aligned_snippet(snippet_obj_t *jump, void *target, uint64_t nr_const_lsb);
 
 /**
  * Populate the conditional BHB with a for-loop.

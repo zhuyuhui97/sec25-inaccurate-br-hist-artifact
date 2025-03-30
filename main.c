@@ -4,8 +4,8 @@
 #include "sc_utils.h"
 #include "inline_asm.h"
 
-void init_btb_targets();
-void walk_btb_evset();
+void init_btb_pc_targets();
+void walk_btb_pc_evset();
 void init_env();
 void print_result();
 void free_env();
@@ -17,6 +17,7 @@ void free_env();
 #define NR_BST_TRAIN 2
 #define NR_BTB_EVICT_VICTIM 1
 #define SZ_BTB_EVSET 2
+#define NR_TARGET_WARMUP_GROUPS 2
 
 __attribute__((aligned(4096)))
 uint64_t *res_cycles[NR_TESTS];
@@ -30,6 +31,9 @@ uint64_t **targets_btb_evset;
 
 __attribute__((aligned(4096)))
 void *ib_ptr = &t_leak;
+__attribute__((aligned(4096)))
+static uint64_t bhs_bcond_tt = 1;
+static uint64_t bhs_bcond_nt = 0;
 
 __attribute__((aligned(4096)))
 static uint64_t offets_btb_victim[NR_BTB_EVICT_VICTIM] = {0x100};
@@ -38,6 +42,7 @@ static uint64_t offsets_bh_safe[LEN_BH_CHAIN + 1] = {0x20, 0x40, 0x60, 0x80, 0xa
 static uint64_t offsets_btb_train[NR_BST_TRAIN] = {0x10, 0x20};
 static uint64_t btb_evset_base[SZ_BTB_EVSET] = {0x8000000, 0x9000000};
 static uint8_t dummy_secret = 12;
+static uint64_t *targets_warmup[NR_TARGET_WARMUP_GROUPS] = {(uint64_t*)&offsets_bh_leak, (uint64_t*)&offsets_bh_safe};
 
 branch_chain_t bh_chain_common;
 
@@ -71,6 +76,33 @@ static bh_chain_params_t chain_mispred = {
     .ptr_secret = &dummy_secret
 };
 
+uint64_t *argv_bhs_safe[1] = {&bhs_bcond_tt};
+uint64_t *argv_bhs_leak[1] = {&bhs_bcond_nt};
+
+static bh_chain_params_t chain_bhs_safe = {
+    .bh_chain_p = &bh_chain_common,
+    .ib_target = &t_empty,
+    .bh_targets_p = &targets_bh_safe,
+    .nr_cond_bh = COND_FP_BITS,
+    .ib_ptr_p = &ib_ptr,
+    .frbuf_p = &frbuf,
+    .ptr_secret = &dummy_secret,
+    .ex_argc = 1,
+    .ex_argv = (char**)&argv_bhs_safe
+};
+
+static bh_chain_params_t chain_bhs_leak = {
+    .bh_chain_p = &bh_chain_common,
+    .ib_target = &t_empty,
+    .bh_targets_p = &targets_bh_safe,
+    .nr_cond_bh = COND_FP_BITS,
+    .ib_ptr_p = &ib_ptr,
+    .frbuf_p = &frbuf,
+    .ptr_secret = &dummy_secret,
+    .ex_argc = 1,
+    .ex_argv = (char**)&argv_bhs_leak
+};
+
 static bh_chain_params_t *train_passes[2] = {&chain_leak, &chain_safe};
 static void *dc_flush_ibptr[1] = {&ib_ptr};
 
@@ -83,7 +115,7 @@ static test_obj_t test_spec_specv2 = {
     .test = &chain_mispred,
     .nr_dc_flush = 0,
     .dc_flush_p = (void **)&dc_flush_ibptr,
-    .before_train = &init_btb_targets,
+    .before_train = &init_btb_pc_targets,
     .before_test = &t_empty
 };
 
@@ -96,7 +128,7 @@ static test_obj_t test_spec_bse_no_ev = {
     .test = &chain_safe,
     .nr_dc_flush = 0,
     .dc_flush_p = (void **)&dc_flush_ibptr,
-    .before_train = &init_btb_targets,
+    .before_train = &init_btb_pc_targets,
     .before_test = &t_empty
 };
 
@@ -109,8 +141,8 @@ static test_obj_t test_spec_bse = {
     .test = &chain_safe,
     .nr_dc_flush = 0,
     .dc_flush_p = (void **)&dc_flush_ibptr,
-    .before_train = &init_btb_targets,
-    .before_test = &walk_btb_evset
+    .before_train = &init_btb_pc_targets,
+    .before_test = &walk_btb_pc_evset
 };
 
 // TODO: rename this function
@@ -123,26 +155,24 @@ void goto_chain(branch_chain_t br_chain, uint64_t *bh_targets, void **ib_ptr_p, 
 }
 
 // TODO: rename this function
-void bst_init(trampoline_obj_t *tramp_br, trampoline_obj_t *tramp_ret, jit_br_and_inc_idx_t *branches, int nr_branches, uint64_t *targets, int64_t nr_targets)
+void btb_pc_record(jit_br_and_inc_idx_t *branches, int nr_branches, uint64_t *targets, int64_t nr_targets)
 {
     for (int i=0; i<nr_branches; i++)
         for (int j=0; j<nr_targets; j++)
-            ((jit_br_and_inc_idx_t)branches[i])(targets, j);
+            (branches[i])(targets, j);
 }
 
 // Initialize BST entries so all involved branches update BHB
-void init_btb_targets()
+void init_btb_pc_targets()
 {
-    bst_init(tramp_br, tramp_ret, (jit_br_and_inc_idx_t *)targets_bh_leak, LEN_BH_CHAIN, targets_btb_train, NR_BST_TRAIN);
-    bst_init(tramp_br, tramp_ret, (jit_br_and_inc_idx_t *)targets_bh_safe, LEN_BH_CHAIN, targets_btb_train, NR_BST_TRAIN);
+    btb_pc_record((jit_br_and_inc_idx_t *)targets_bh_leak, LEN_BH_CHAIN, targets_btb_train, NR_BST_TRAIN);
+    btb_pc_record((jit_br_and_inc_idx_t *)targets_bh_safe, LEN_BH_CHAIN, targets_btb_train, NR_BST_TRAIN);
 }
 
-void walk_btb_evset()
+void walk_btb_pc_evset()
 {
     for (int i = 0; i < SZ_BTB_EVSET; i++)
-    {
-        bst_init(tramp_btb_evset[i], tramp_ret, (jit_br_and_inc_idx_t *)targets_btb_evset[i], NR_BTB_EVICT_VICTIM, targets_btb_train, NR_BST_TRAIN);
-    }
+        btb_pc_record((jit_br_and_inc_idx_t *)targets_btb_evset[i], NR_BTB_EVICT_VICTIM, targets_btb_train, NR_BST_TRAIN);
 }
 
 void do_spectre_test(test_obj_t test_specs)
@@ -230,6 +260,11 @@ void init_trampolines()
     }
 }
 
+void init_aligned_snippets()
+{
+    
+}
+
 void compile_br_targets()
 {
     targets_bh_leak = prep_jmp_targets(offsets_bh_leak, LEN_BH_CHAIN, *tramp_br);
@@ -255,6 +290,7 @@ void init_env()
     }
 
     init_trampolines();
+    init_aligned_snippets();
     compile_br_targets();
 
     bh_chain_common = (branch_chain_t)(tramp_br->jit_mem->call_entry);

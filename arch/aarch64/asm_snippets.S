@@ -53,3 +53,17 @@ SNIPPET_DECLARE asm_br
     ldr x7, [x3]
     br x7
 SNIPPET_END asm_br
+
+SNIPPET_DECLARE asm_bhs_br
+    ldr x7, [x2]
+    ldr x8, [x7]
+    cmp x7, #0
+SNIPPET_ALIGN asm_bhs_br
+    b.gt #32
+    padding_nop 32
+    mov x0, x4
+    mov x1, x5
+    ops_barrier 0x10
+    ldr x7, [x3]
+    br x7
+SNIPPET_END asm_bhs_br
