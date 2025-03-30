@@ -42,7 +42,7 @@ static uint64_t offsets_bh_safe[LEN_BH_CHAIN + 1] = {0x20, 0x40, 0x60, 0x80, 0xa
 static uint64_t offsets_btb_train[NR_BST_TRAIN] = {0x10, 0x20};
 static uint64_t btb_evset_base[SZ_BTB_EVSET] = {0x8000000, 0x9000000};
 static uint8_t dummy_secret = 12;
-static uint64_t *targets_warmup[NR_TARGET_WARMUP_GROUPS] = {(uint64_t*)&offsets_bh_leak, (uint64_t*)&offsets_bh_safe};
+static uint64_t *targets_warmup[NR_TARGET_WARMUP_GROUPS] = {(uint64_t*)&targets_bh_leak, (uint64_t*)&targets_bh_safe};
 
 branch_chain_t bh_chain_common;
 
