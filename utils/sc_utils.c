@@ -47,8 +47,6 @@ void test_mem_latency(uint8_t *probe_ptr, uint64_t rounds)
 {
     register uint64_t __cycles_slow = 0;
     register uint64_t __cycles_fast = 0;
-    // volatile uint8_t* probe_ptr = &cache_probe_mem[192];
-    // memset(cache_probe_mem, 0x41, 256*SIZE_CACHE_STRIDE);
     *probe_ptr = 0x41;
 
     read_cycles();

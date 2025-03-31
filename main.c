@@ -269,23 +269,23 @@ int main()
     return 0;
 }
 
-void init_trampolines()
+void init_trampolines_bh_chain()
 {
     tramp_ret = prep_trampoline(&jit_ret_obj, &jit_nop_obj, 16, 0, BASE_RET_MEM, 0x1000);
     tramp_br = prep_trampoline(&jit_br_and_inc_idx_obj, NULL, 0, 0, BASE_BHB_POPULATE, 0x1000);
+}
+
+void init_trampolines_evset()
+{
     tramp_btb_pc_evset = malloc(SZ_BTB_EVSET * sizeof(trampoline_obj_t *));
     for (int i = 0; i < SZ_BTB_EVSET; i++)
         tramp_btb_pc_evset[i] = prep_trampoline(&jit_br_and_inc_idx_obj, NULL, 0, 0, (void *)btb_evset_base[i], 0x1000);
-}
-
-void init_aligned_snippets()
-{
     tramp_btb_bh_evset = malloc(SZ_BTB_EVSET * sizeof(trampoline_obj_t *));
     for (int i = 0; i < SZ_BTB_EVSET; i++)
         tramp_btb_bh_evset[i] = prep_aligned_snippet(&jit_bhs_evict_obj, &__asm_bhs_br_align, 16);
 }
 
-void compile_br_targets()
+void compile_targets_bh_chain()
 {
     targets_bh_leak = prep_jmp_targets(offsets_bh_leak, LEN_BH_CHAIN, *tramp_br);
     targets_bh_leak[LEN_BH_CHAIN - 1] = (uint64_t)&asm_br;
@@ -293,6 +293,11 @@ void compile_br_targets()
     targets_bh_safe[LEN_BH_CHAIN - 1] = (uint64_t)&asm_br;
 
     targets_btb_train = prep_jmp_targets(offsets_btb_train, NR_BST_TRAIN, *tramp_ret);
+
+}
+
+void compile_targets_evset()
+{
     targets_btb_pc_evset = malloc(SZ_BTB_EVSET * sizeof(uint64_t *));
     for (int i = 0; i < SZ_BTB_EVSET; i++)
         targets_btb_pc_evset[i] = prep_jmp_targets(offets_btb_victim, NR_BTB_EVICT_VICTIM, *tramp_btb_pc_evset[i]);
@@ -312,9 +317,10 @@ void init_env()
     for (int i = 0; i < NR_TESTS; i++)
         res_cycles[i] = malloc(NR_TEST_ITER * sizeof(uint64_t));
 
-    init_trampolines();
-    init_aligned_snippets();
-    compile_br_targets();
+    init_trampolines_bh_chain();
+    compile_targets_bh_chain();
+    init_trampolines_evset();
+    compile_targets_evset();
 
     bh_chain_common = (branch_chain_t)(tramp_br->jit_mem->call_entry);
 }
