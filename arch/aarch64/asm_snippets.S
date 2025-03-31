@@ -67,3 +67,11 @@ SNIPPET_ALIGN asm_bhs_br
     ldr x7, [x3]
     br x7
 SNIPPET_END asm_bhs_br
+
+SNIPPET_DECLARE jit_bhs_evict
+    nop
+    nop
+    ldr x7, [x3]
+SNIPPET_ALIGN jit_bhs_evict
+    br x7
+SNIPPET_END jit_bhs_evict

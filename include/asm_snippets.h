@@ -33,6 +33,7 @@ typedef struct
 JIT_ALIGNED_SNIPPET_SYMBOLS(void, jit_br_and_inc_idx, uint64_t *offsets, uint64_t idx);
 // TODO: fix argument list
 JIT_ALIGNED_SNIPPET_SYMBOLS(void, asm_bhs_br, uint64_t *offsets, uint64_t idx);
+JIT_ALIGNED_SNIPPET_SYMBOLS(void, jit_bhs_evict, uint64_t *offsets, uint64_t idx, uint64_t sth, void* jump);
 
 JIT_SNIPPET_SYMBOLS(void, jit_ret, void);
 JIT_SNIPPET_SYMBOLS(void, jit_nop, void);
