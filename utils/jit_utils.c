@@ -135,7 +135,6 @@ void free_trampoline(trampoline_obj_t *obj)
     free(obj);
 }
 
-// TODO: is this really fitting the length?
 uint64_t *prep_jmp_targets(uint64_t *offsets, int len, trampoline_obj_t trampoline)
 {
     uint64_t jump_interval = trampoline.jump_interval;
