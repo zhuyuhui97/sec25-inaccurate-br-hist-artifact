@@ -30,20 +30,21 @@ uint64_t *targets_bh_safe;
 uint64_t *targets_btb_train;
 uint64_t **targets_btb_pc_evset;
 uint64_t **targets_btb_bh_evset;
+uint64_t *targets_bhb_pc_warmup[NR_TARGET_WARMUP_GROUPS] = {(uint64_t *)&targets_bh_leak, (uint64_t *)&targets_bh_safe};
 
 __attribute__((aligned(4096))) void *ib_ptr = &t_leak;
 __attribute__((aligned(4096))) static uint64_t bhs_bcond_tt = 1;
 __attribute__((aligned(4096))) static uint64_t bhs_bcond_nt = 0;
 
-__attribute__((aligned(4096))) static uint64_t offets_btb_victim[NR_BTB_EVICT_VICTIM] = {0x100};
+__attribute__((aligned(4096))) 
+static uint64_t offets_btb_victim[NR_BTB_EVICT_VICTIM] = {0x100};
 static uint64_t offsets_bh_leak[LEN_BH_CHAIN] = {0x00, 0x20, 0x40, 0x60, 0x80, 0xa0, 0xc0, 0x00, -1};
 static uint64_t offsets_bh_safe[LEN_BH_CHAIN] = {0x20, 0x40, 0x60, 0x80, 0xa0, 0xc0, 0x100, 0xe0, -1};
 static uint64_t offsets_btb_train[NR_BST_TRAIN] = {0x10, 0x20};
 static uint64_t btb_evset_base[SZ_BTB_EVSET] = {0x8000000, 0x9000000};
-static uint8_t dummy_secret = 12;
-static uint64_t *targets_warmup[NR_TARGET_WARMUP_GROUPS] = {(uint64_t *)&targets_bh_leak, (uint64_t *)&targets_bh_safe};
-static void *ib_ptr_empty = &t_empty;
 
+static uint8_t dummy_secret = 12;
+static void *ib_ptr_empty = &t_empty;
 branch_chain_t bh_chain_common;
 
 static bh_chain_params_t chain_leak = {
@@ -76,36 +77,7 @@ static bh_chain_params_t chain_mispred = {
     .ptr_secret = &dummy_secret
 };
 
-static uint64_t *argv_bhs_safe[1] = {&bhs_bcond_tt};
-static uint64_t *argv_bhs_leak[1] = {&bhs_bcond_nt};
-static void *bhs_dc_flush[2] = {&bhs_bcond_tt, &bhs_bcond_nt};
-
-static bh_chain_params_t chain_bhs_safe = {
-    .bh_chain_p = &bh_chain_common,
-    .ib_target = &t_empty,
-    .bh_targets_p = &targets_bh_safe,
-    .nr_cond_bh = COND_FP_BITS,
-    .ib_ptr_p = &ib_ptr,
-    .frbuf_p = &frbuf,
-    .ptr_secret = &dummy_secret,
-    .ex_argc = 1,
-    .ex_argv = (char **)&argv_bhs_safe
-};
-
-static bh_chain_params_t chain_bhs_leak = {
-    .bh_chain_p = &bh_chain_common,
-    .ib_target = &t_leak,
-    .bh_targets_p = &targets_bh_safe,
-    .nr_cond_bh = COND_FP_BITS,
-    .ib_ptr_p = &ib_ptr,
-    .frbuf_p = &frbuf,
-    .ptr_secret = &dummy_secret,
-    .ex_argc = 1,
-    .ex_argv = (char **)&argv_bhs_leak
-};
-
 static bh_chain_params_t *train_chains[2] = {&chain_leak, &chain_safe};
-static bh_chain_params_t *train_chains_bhs[2] = {&chain_bhs_leak, &chain_bhs_safe};
 
 static test_obj_t test_spec_v2 = {
     .test_spec = TEST_SPEC_V2,
@@ -146,6 +118,36 @@ static test_obj_t test_spec_bse = {
     .before_test = &walk_btb_pc_evset
 };
 
+static uint64_t *argv_bhs_safe[1] = {&bhs_bcond_tt};
+static uint64_t *argv_bhs_leak[1] = {&bhs_bcond_nt};
+static void *bhs_dc_flush[2] = {&bhs_bcond_tt, &bhs_bcond_nt};
+
+static bh_chain_params_t chain_bhs_safe = {
+    .bh_chain_p = &bh_chain_common,
+    .ib_target = &t_empty,
+    .bh_targets_p = &targets_bh_safe,
+    .nr_cond_bh = COND_FP_BITS,
+    .ib_ptr_p = &ib_ptr,
+    .frbuf_p = &frbuf,
+    .ptr_secret = &dummy_secret,
+    .ex_argc = 1,
+    .ex_argv = (char **)&argv_bhs_safe
+};
+
+static bh_chain_params_t chain_bhs_leak = {
+    .bh_chain_p = &bh_chain_common,
+    .ib_target = &t_leak,
+    .bh_targets_p = &targets_bh_safe,
+    .nr_cond_bh = COND_FP_BITS,
+    .ib_ptr_p = &ib_ptr,
+    .frbuf_p = &frbuf,
+    .ptr_secret = &dummy_secret,
+    .ex_argc = 1,
+    .ex_argv = (char **)&argv_bhs_leak
+};
+
+static bh_chain_params_t *train_chains_bhs[2] = {&chain_bhs_leak, &chain_bhs_safe};
+
 static test_obj_t test_spec_bhs = {
     .test_spec = TEST_SPEC_BSE,
     .nr_test_passes = NR_TEST_ITER,
@@ -179,7 +181,7 @@ void btb_pc_record(branch_chain_t *branches, int nr_branches, uint64_t *targets,
 void init_btb_pc_targets()
 {
     for (int i = 0; i < NR_TARGET_WARMUP_GROUPS; i++)
-        btb_pc_record((branch_chain_t *)(*targets_warmup[i]), LEN_BH_CHAIN - 1, targets_btb_train, NR_BST_TRAIN);
+        btb_pc_record((branch_chain_t *)(*targets_bhb_pc_warmup[i]), LEN_BH_CHAIN - 1, targets_btb_train, NR_BST_TRAIN);
 }
 
 void walk_btb_pc_evset()
