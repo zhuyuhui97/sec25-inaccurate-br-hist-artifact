@@ -76,9 +76,9 @@ static bh_chain_params_t chain_mispred = {
     .ptr_secret = &dummy_secret
 };
 
-uint64_t *argv_bhs_safe[1] = {&bhs_bcond_tt};
-uint64_t *argv_bhs_leak[1] = {&bhs_bcond_nt};
-void *bhs_dc_flush[2] = {&bhs_bcond_tt, &bhs_bcond_nt};
+static uint64_t *argv_bhs_safe[1] = {&bhs_bcond_tt};
+static uint64_t *argv_bhs_leak[1] = {&bhs_bcond_nt};
+static void *bhs_dc_flush[2] = {&bhs_bcond_tt, &bhs_bcond_nt};
 
 static bh_chain_params_t chain_bhs_safe = {
     .bh_chain_p = &bh_chain_common,
@@ -104,15 +104,15 @@ static bh_chain_params_t chain_bhs_leak = {
     .ex_argv = (char **)&argv_bhs_leak
 };
 
-static bh_chain_params_t *train_passes[2] = {&chain_leak, &chain_safe};
-static bh_chain_params_t *train_passes_bhs[2] = {&chain_bhs_leak, &chain_bhs_safe};
+static bh_chain_params_t *train_chains[2] = {&chain_leak, &chain_safe};
+static bh_chain_params_t *train_chains_bhs[2] = {&chain_bhs_leak, &chain_bhs_safe};
 
-static test_obj_t test_spec_specv2 = {
+static test_obj_t test_spec_v2 = {
     .test_spec = TEST_SPEC_V2,
     .nr_test_passes = NR_TEST_ITER,
     .nr_train_passes = 2,
     .nr_trains = 1,
-    .trains = (bh_chain_params_t **)train_passes,
+    .trains = (bh_chain_params_t **)train_chains,
     .test = &chain_mispred,
     .nr_dc_flush = 0,
     .dc_flush_p = NULL,
@@ -125,7 +125,7 @@ static test_obj_t test_spec_bse_no_ev = {
     .nr_test_passes = NR_TEST_ITER,
     .nr_train_passes = 2,
     .nr_trains = 1,
-    .trains = (bh_chain_params_t **)train_passes,
+    .trains = (bh_chain_params_t **)train_chains,
     .test = &chain_safe,
     .nr_dc_flush = 0,
     .dc_flush_p = NULL,
@@ -138,7 +138,7 @@ static test_obj_t test_spec_bse = {
     .nr_test_passes = NR_TEST_ITER,
     .nr_train_passes = 2,
     .nr_trains = 1,
-    .trains = (bh_chain_params_t **)train_passes,
+    .trains = (bh_chain_params_t **)train_chains,
     .test = &chain_safe,
     .nr_dc_flush = 0,
     .dc_flush_p = NULL,
@@ -151,7 +151,7 @@ static test_obj_t test_spec_bhs = {
     .nr_test_passes = NR_TEST_ITER,
     .nr_train_passes = 2,
     .nr_trains = 1,
-    .trains = (bh_chain_params_t **)train_passes_bhs,
+    .trains = (bh_chain_params_t **)train_chains_bhs,
     .test = &chain_bhs_safe,
     .nr_dc_flush = 2,
     .dc_flush_p = (void **)&bhs_dc_flush,
@@ -180,8 +180,6 @@ void init_btb_pc_targets()
 {
     for (int i = 0; i < NR_TARGET_WARMUP_GROUPS; i++)
         btb_pc_record((branch_chain_t *)(*targets_warmup[i]), LEN_BH_CHAIN - 1, targets_btb_train, NR_BST_TRAIN);
-    // btb_pc_record((jit_br_and_inc_idx_t *)targets_bh_leak, LEN_BH_CHAIN, targets_btb_train, NR_BST_TRAIN);
-    // btb_pc_record((jit_br_and_inc_idx_t *)targets_bh_safe, LEN_BH_CHAIN, targets_btb_train, NR_BST_TRAIN);
 }
 
 void walk_btb_pc_evset()
@@ -260,7 +258,7 @@ void do_spectre_test(test_obj_t test_specs)
 int main()
 {
     init_env();
-    do_spectre_test(test_spec_specv2);
+    do_spectre_test(test_spec_v2);
     do_spectre_test(test_spec_bse_no_ev);
     do_spectre_test(test_spec_bse);
     do_spectre_test(test_spec_bhs);
@@ -295,9 +293,7 @@ void compile_br_targets()
     targets_btb_train = prep_jmp_targets(offsets_btb_train, NR_BST_TRAIN, *tramp_ret);
     targets_btb_pc_evset = malloc(SZ_BTB_EVSET * sizeof(uint64_t *));
     for (int i = 0; i < SZ_BTB_EVSET; i++)
-    {
         targets_btb_pc_evset[i] = prep_jmp_targets(offets_btb_victim, NR_BTB_EVICT_VICTIM, *tramp_btb_pc_evset[i]);
-    }
 
     targets_btb_bh_evset = malloc(SZ_BTB_EVSET * sizeof(uint64_t *));
     for (int i = 0; i < SZ_BTB_EVSET; i++)
@@ -312,9 +308,7 @@ void init_env()
     init_frbuf(256, SIZE_CACHE_STRIDE);
     test_mem_latency(SC_ENCODE_ADDR(frbuf, &dummy_secret), NR_TEST_ITER);
     for (int i = 0; i < NR_TESTS; i++)
-    {
         res_cycles[i] = malloc(NR_TEST_ITER * sizeof(uint64_t));
-    }
 
     init_trampolines();
     init_aligned_snippets();
@@ -353,35 +347,20 @@ void print_result()
 void free_env()
 {
     free_frbuf();
-    for (int i = 0; i < NR_TESTS; i++)
-    {
-        free(res_cycles[i]);
-    }
+    for (int i = 0; i < NR_TESTS; i++) free(res_cycles[i]);
 
     free(targets_bh_leak);
     free(targets_bh_safe);
     free(targets_btb_train);
-    for (int i = 0; i < SZ_BTB_EVSET; i++)
-    {
-        free(targets_btb_pc_evset[i]);
-    }
+    for (int i = 0; i < SZ_BTB_EVSET; i++) free(targets_btb_pc_evset[i]);
     free(targets_btb_pc_evset);
-    for (int i = 0; i < SZ_BTB_EVSET; i++)
-    {
-        free(targets_btb_bh_evset[i]);
-    }
+    for (int i = 0; i < SZ_BTB_EVSET; i++) free(targets_btb_bh_evset[i]);
     free(targets_btb_bh_evset);
 
     free_trampoline(tramp_ret);
     free_trampoline(tramp_br);
-    for (int i = 0; i < SZ_BTB_EVSET; i++)
-    {
-        free_trampoline(tramp_btb_pc_evset[i]);
-    }
+    for (int i = 0; i < SZ_BTB_EVSET; i++) free_trampoline(tramp_btb_pc_evset[i]);
     free(tramp_btb_pc_evset);
-    for (int i = 0; i < SZ_BTB_EVSET; i++)
-    {
-        free_trampoline(tramp_btb_bh_evset[i]);
-    }
+    for (int i = 0; i < SZ_BTB_EVSET; i++) free_trampoline(tramp_btb_bh_evset[i]);
     free(tramp_btb_bh_evset);
 }
