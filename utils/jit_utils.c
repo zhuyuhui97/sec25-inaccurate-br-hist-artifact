@@ -76,24 +76,24 @@ trampoline_obj_t* prep_trampoline(snippet_obj_t *jump, snippet_obj_t *padding, i
     return result;
 }
 
-trampoline_obj_t* prep_aligned_snippet(snippet_obj_t *jump, void *target, uint64_t nr_const_lsb)
+trampoline_obj_t* prep_aligned_snippet(snippet_obj_t *src, void *anchor, uint64_t nr_const_lsb)
 {
     if (os_page_size==0) os_page_size = getpagesize();
     trampoline_obj_t *result = NULL;
     void *mem;
     void *writeptr;
-    uint64_t entry = (uint64_t) jump->entry;
-    uint64_t length = (uint64_t)jump->end - entry;
-    uint64_t align_src = (uint64_t) jump->align;
-    uint64_t align_offset = align_src - entry;
+    uint64_t entry = (uint64_t) src->entry;
+    uint64_t length = (uint64_t) src->end - entry;
+    uint64_t align = (uint64_t) src->align;
+    uint64_t align_offset = align - entry;
 
     uint64_t mask_flip = (1 << nr_const_lsb);
     uint64_t mask_lower = mask_flip - 1;
     uint64_t mask_higher = ~mask_lower ^ mask_flip;
 
-    // uint64_t addr_align_src = (uint64_t) base + offset_align_src;
-    // int64_t offset_diff = offset_align_snippet - offset_align_src;
-    uint64_t addr_request = ((uint64_t)target - align_offset) ^ mask_flip;
+    uint64_t addr_request = ((uint64_t)anchor - align_offset) ^ mask_flip;
+    // if ((addr_request ^ (uint64_t)anchor)&(~(os_page_size-1))==0)
+    //     addr_request += os_page_size;
     uint64_t offset_in_page = addr_request & MASK_IN_PAGE_OFFSET;
     uint64_t mem_size = (offset_in_page + length + os_page_size) & (~MASK_IN_PAGE_OFFSET);
 
@@ -101,12 +101,12 @@ trampoline_obj_t* prep_aligned_snippet(snippet_obj_t *jump, void *target, uint64
     {
         mem = mmap((void*)addr_request, mem_size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS | MAP_POPULATE, -1, 0);
         writeptr = mem + offset_in_page;
-        uint64_t target_target = (uint64_t) writeptr + align_offset;
+        uint64_t align_target = (uint64_t) writeptr + align_offset;
         // let's check:
         // lower bits should keep consistent
         // the higher 1 bit should be flipped
-        bool lower_eq = ((align_src ^ target_target) & mask_lower) == 0;
-        bool higher_lsb_flip = ((align_src ^ target_target) & mask_flip) != 0;
+        bool lower_eq = (((uint64_t)anchor ^ align_target) & mask_lower) == 0;
+        bool higher_lsb_flip = (((uint64_t)anchor ^ align_target) & mask_flip) != 0;
         if (lower_eq && higher_lsb_flip)
             break;
         // returned address does not match the conditions, try requesting next address
@@ -122,7 +122,7 @@ trampoline_obj_t* prep_aligned_snippet(snippet_obj_t *jump, void *target, uint64
         .jump_size = length,
         .jump_interval = 0,
         .offset = offset_in_page,
-        .jump_snippet = jump,
+        .jump_snippet = src,
         .padding_snippet = 0,
         .jit_mem = reg_jit_mem(mem + offset_in_page, mem, mem_size, ALLOC_MMAP),
     };
@@ -135,6 +135,7 @@ void free_trampoline(trampoline_obj_t *obj)
     free(obj);
 }
 
+// TODO: is this really fitting the length?
 uint64_t *prep_jmp_targets(uint64_t *offsets, int len, trampoline_obj_t trampoline)
 {
     uint64_t jump_interval = trampoline.jump_interval;
