@@ -51,6 +51,7 @@ SNIPPET_DECLARE asm_br
     mov x1, x5
     ops_barrier 0x10
     ldr x7, [x3]
+SNIPPET_ALIGN asm_br
     br x7
 SNIPPET_END asm_br
 
