@@ -58,18 +58,18 @@ typedef struct {
     uint64_t nr_cond_bh;
     void **ib_ptr_p;
     char **frbuf_p;
-    char *ptr_secret;
+    char *secret_p;
     uint64_t ex_argc;
     char **ex_argv;
 } bh_chain_params_t;
 
 typedef struct {
-    enum test_type test_spec;
-    uint64_t nr_test_passes;
+    enum test_type type;
+    uint64_t nr_repeat;
     uint64_t nr_train_passes;
-    uint64_t nr_trains;
-    bh_chain_params_t** trains;
-    bh_chain_params_t* test;
+    uint64_t nr_train_chains;
+    bh_chain_params_t** train_chains;
+    bh_chain_params_t* test_chain;
     uint64_t nr_dc_flush;
     void **dc_flush_p;
     void (*before_train)(void);

@@ -39,6 +39,6 @@ JIT_ALIGNED_SNIPPET_SYMBOLS(void, asm_br, uint64_t, uint64_t, uint64_t, uint64_t
 JIT_SNIPPET_SYMBOLS(void, jit_ret, void);
 JIT_SNIPPET_SYMBOLS(void, jit_nop, void);
 
-typedef void (*branch_chain_t)(uint64_t *offsets, uint64_t idx, char** argv, void **ib_ptr, void *frbuf, void *ptr_secret);
+typedef void (*branch_chain_t)(uint64_t *offsets, uint64_t idx, char** argv, void **ib_ptr, void *frbuf, void *secret_p);
 
 #endif

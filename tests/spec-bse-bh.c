@@ -6,6 +6,9 @@
 void init_btb_pc_targets();
 void walk_evset();
 
+trampoline_obj_t **tramp_btb_bh_evset;
+uint64_t **targets_btb_bh_evset;
+
 trampoline_obj_t **tramp_btb_pc_evset;
 uint64_t **targets_btb_pc_evset;
 uint64_t *targets_btb_train;
@@ -100,29 +103,32 @@ void init_btb_pc_targets()
         btb_pc_record((branch_chain_t *)(*targets_bhb_pc_warmup[i]), LEN_BH_CHAIN - 1, targets_btb_train, NR_BST_TRAIN);
 }
 
+
 void walk_evset()
 {
     for (int i = 0; i < SZ_BTB_EVSET; i++)
-        btb_pc_record((branch_chain_t *)targets_btb_pc_evset[i], NR_BTB_EVICT_VICTIM, targets_btb_train, NR_BST_TRAIN);
+        goto_chain(bh_chain_common, targets_btb_bh_evset[i], &ib_ptr_empty, COND_FP_BITS, NULL, NULL, 0, NULL);
 }
 
 void init_evset()
 {
     targets_btb_train = prep_jmp_targets(offsets_btb_train, NR_BST_TRAIN, *tramp_ret);
-    tramp_btb_pc_evset = malloc(SZ_BTB_EVSET * sizeof(trampoline_obj_t *));
+    tramp_btb_bh_evset = malloc(SZ_BTB_EVSET * sizeof(trampoline_obj_t *));
     for (int i = 0; i < SZ_BTB_EVSET; i++)
-        tramp_btb_pc_evset[i] = prep_trampoline(&jit_br_and_inc_idx_obj, NULL, 0, 0, (void *)btb_evset_base[i], 0x4000);
-    targets_btb_pc_evset = malloc(SZ_BTB_EVSET * sizeof(uint64_t *));
+        tramp_btb_bh_evset[i] = prep_aligned_snippet(&asm_br_obj, (void*)0x2530, 16);
+    targets_btb_bh_evset = malloc(SZ_BTB_EVSET * sizeof(uint64_t *));
     for (int i = 0; i < SZ_BTB_EVSET; i++)
-        targets_btb_pc_evset[i] = prep_jmp_targets(offets_btb_victim, NR_BTB_EVICT_VICTIM, *tramp_btb_pc_evset[i]);
+    {
+        targets_btb_bh_evset[i] = prep_jmp_targets(offsets_bh_leak, LEN_BH_CHAIN, *tramp_br);
+        targets_btb_bh_evset[i][LEN_BH_CHAIN - 1] = (uint64_t)tramp_btb_bh_evset[i]->jit_mem->call_entry;
+    }
 
 }
 
 void free_evset()
 {
-    free(targets_btb_train);
-    for (int i = 0; i < SZ_BTB_EVSET; i++) free(targets_btb_pc_evset[i]);
-    free(targets_btb_pc_evset);
-    for (int i = 0; i < SZ_BTB_EVSET; i++) free_trampoline(tramp_btb_pc_evset[i]);
-    free(tramp_btb_pc_evset);
+    for (int i = 0; i < SZ_BTB_EVSET; i++) free(targets_btb_bh_evset[i]);
+    free(targets_btb_bh_evset);
+    for (int i = 0; i < SZ_BTB_EVSET; i++) free_trampoline(tramp_btb_bh_evset[i]);
+    free(tramp_btb_bh_evset);
 }
