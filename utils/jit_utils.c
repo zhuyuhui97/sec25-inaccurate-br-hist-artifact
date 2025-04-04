@@ -36,7 +36,6 @@ void free_jit_mem(jit_mem_obj_t *obj)
     free(obj);
 }
 
-
 trampoline_obj_t* prep_trampoline(snippet_obj_t *jump, snippet_obj_t *padding, int jump_interval, int offset, register void *req_base_addr, int mem_size)
 {
     trampoline_obj_t *result = NULL;

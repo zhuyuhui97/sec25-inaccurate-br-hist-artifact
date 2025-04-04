@@ -44,15 +44,15 @@ typedef struct
     jit_mem_obj_t *jit_mem;
 } trampoline_obj_t;
 
-enum test_type {
-    TEST_SPEC_V2,
-    TEST_SPEC_NO_BSE,
-    TEST_SPEC_BSE,
-    NR_TESTS,
-};
+// enum test_type {
+//     TEST_SPEC_V2,
+//     TEST_SPEC_NO_BSE,
+//     TEST_SPEC_BSE,
+//     NR_TESTS,
+// };
 
 typedef struct {
-    branch_chain_t *bh_chain_p;
+    trampoline_obj_t **bh_tramp_p;
     void *ib_target;
     uint64_t **bh_targets_p;
     uint64_t nr_cond_bh;
@@ -64,17 +64,23 @@ typedef struct {
 } bh_chain_params_t;
 
 typedef struct {
-    enum test_type type;
     uint64_t nr_repeat;
     uint64_t nr_train_passes;
     uint64_t nr_train_chains;
     bh_chain_params_t** train_chains;
     bh_chain_params_t* test_chain;
     uint64_t nr_dc_flush;
-    void **dc_flush_p;
+    void **dc_flush;
     void (*before_train)(void);
     void (*before_test)(void);
+    void *bp_snippet;
+    char* description;
 } test_obj_t;
+
+typedef struct {
+    uint64_t nr_tests;
+    test_obj_t* tests[];
+} run_obj_t;
 
 jit_mem_obj_t *reg_jit_mem(void* entry, void* addr, uint64_t size, enum ALLOC_METHOD method);
 void free_jit_mem(jit_mem_obj_t *obj);

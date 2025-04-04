@@ -1,10 +1,15 @@
 #include "tests.h"
 
+#define LEN_BH_CHAIN 9
 #define NR_BTB_EVICT_VICTIM 1
 #define NR_BST_TRAIN 2
+#define NR_TARGET_WARMUP_GROUPS 2
 
 void init_btb_pc_targets();
 void walk_evset();
+
+uint64_t *targets_bh_leak;
+uint64_t *targets_bh_safe;
 
 trampoline_obj_t **tramp_btb_pc_evset;
 uint64_t **targets_btb_pc_evset;
@@ -13,10 +18,12 @@ uint64_t *targets_bhb_pc_warmup[NR_TARGET_WARMUP_GROUPS] = {(uint64_t *)&targets
 
 static uint64_t offsets_btb_train[NR_BST_TRAIN] = {0x10, 0x20};
 static uint64_t offets_btb_victim[NR_BTB_EVICT_VICTIM] = {0x100};
+uint64_t offsets_bh_leak[LEN_BH_CHAIN] = {0x00, 0x20, 0x40, 0x60, 0x80, 0xa0, 0xc0, 0x00, -1};
+uint64_t offsets_bh_safe[LEN_BH_CHAIN] = {0x20, 0x40, 0x60, 0x80, 0xa0, 0xc0, 0x100, 0xe0, -1};
 static uint64_t btb_evset_base[SZ_BTB_EVSET] = {0x8000000, 0x9000000};
 
 static bh_chain_params_t chain_leak = {
-    .bh_chain_p = &bh_chain_common,
+    .bh_tramp_p = &tramp_br,
     .ib_target = &t_leak,
     .bh_targets_p = &targets_bh_leak,
     .nr_cond_bh = COND_FP_BITS,
@@ -26,7 +33,7 @@ static bh_chain_params_t chain_leak = {
 };
 
 static bh_chain_params_t chain_safe = {
-    .bh_chain_p = &bh_chain_common,
+    .bh_tramp_p = &tramp_br,
     .ib_target = &t_empty,
     .bh_targets_p = &targets_bh_safe,
     .nr_cond_bh = COND_FP_BITS,
@@ -36,7 +43,7 @@ static bh_chain_params_t chain_safe = {
 };
 
 static bh_chain_params_t chain_mispred = {
-    .bh_chain_p = &bh_chain_common,
+    .bh_tramp_p = &tramp_br,
     .ib_target = &t_empty,
     .bh_targets_p = &targets_bh_leak,
     .nr_cond_bh = COND_FP_BITS,
@@ -48,42 +55,50 @@ static bh_chain_params_t chain_mispred = {
 static bh_chain_params_t *train_chains[2] = {&chain_leak, &chain_safe};
 
 test_obj_t test_spec_v2 = {
-    .type = TEST_SPEC_V2,
     .nr_repeat = NR_TEST_ITER,
     .nr_train_passes = 2,
     .nr_train_chains = 2,
     .train_chains = (bh_chain_params_t **)train_chains,
     .test_chain = &chain_mispred,
     .nr_dc_flush = 0,
-    .dc_flush_p = NULL,
+    .dc_flush = NULL,
     .before_train = &init_btb_pc_targets,
-    .before_test = &t_empty
+    .before_test = &t_empty,
+    .bp_snippet = &asm_br,
+    .description = "Spectre-v2"
 };
 
 test_obj_t test_spec_bse_no_ev = {
-    .type = TEST_SPEC_NO_BSE,
     .nr_repeat = NR_TEST_ITER,
     .nr_train_passes = 2,
     .nr_train_chains = 2,
     .train_chains = (bh_chain_params_t **)train_chains,
     .test_chain = &chain_safe,
     .nr_dc_flush = 0,
-    .dc_flush_p = NULL,
+    .dc_flush = NULL,
     .before_train = &init_btb_pc_targets,
-    .before_test = &t_empty
+    .before_test = &t_empty,
+    .bp_snippet = &asm_br,
+    .description = "Different BH"
 };
 
 test_obj_t test_spec_bse = {
-    .type = TEST_SPEC_BSE,
     .nr_repeat = NR_TEST_ITER,
     .nr_train_passes = 2,
     .nr_train_chains = 2,
     .train_chains = (bh_chain_params_t **)train_chains,
     .test_chain = &chain_safe,
     .nr_dc_flush = 0,
-    .dc_flush_p = NULL,
+    .dc_flush = NULL,
     .before_train = &init_btb_pc_targets,
-    .before_test = &walk_evset
+    .before_test = &walk_evset,
+    .bp_snippet = &asm_br,
+    .description = "Different BH with Spectre-BSE"
+};
+
+run_obj_t run = {
+    .nr_tests = 3,
+    .tests = {&test_spec_v2, &test_spec_bse_no_ev, &test_spec_bse}
 };
 
 void btb_pc_record(branch_chain_t *branches, int nr_branches, uint64_t *targets, int64_t nr_targets)
@@ -98,6 +113,20 @@ void init_btb_pc_targets()
 {
     for (int i = 0; i < NR_TARGET_WARMUP_GROUPS; i++)
         btb_pc_record((branch_chain_t *)(*targets_bhb_pc_warmup[i]), LEN_BH_CHAIN - 1, targets_btb_train, NR_BST_TRAIN);
+}
+
+void init_test_bh_chains()
+{
+    targets_bh_leak = prep_jmp_targets(offsets_bh_leak, LEN_BH_CHAIN, *tramp_br);
+    targets_bh_leak[LEN_BH_CHAIN - 1] = (uint64_t)&asm_br;
+    targets_bh_safe = prep_jmp_targets(offsets_bh_safe, LEN_BH_CHAIN, *tramp_br);
+    targets_bh_safe[LEN_BH_CHAIN - 1] = (uint64_t)&asm_br;
+}
+
+void free_test_bh_chains()
+{
+    free(targets_bh_leak);
+    free(targets_bh_safe);
 }
 
 void walk_evset()

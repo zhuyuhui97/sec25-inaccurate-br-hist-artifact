@@ -37,6 +37,7 @@
 #define IB_FAST_THRESHOLD_PMU_EL0   (12)
 #define IB_FAST_THRESHOLD_POSIX     (35000)
 #define CACHE_LINE_SIZE             (64)
+#define BHB_LEN_IB                  (4)
 
 #elif defined orin // Cortex-A78, TBD
 
@@ -75,10 +76,11 @@
 #define COND_FP_BITS                (512)
 #define BST_IDX_MSB                 (24)
 #define BST_IDX_LSB                 (2)
-#define SZ_BTB_EVSET                (2)
+#define SZ_BTB_EVSET                (4)
 #define IB_FAST_THRESHOLD_PMU_EL0   (12)
 #define IB_FAST_THRESHOLD_POSIX     (35000)
 #define CACHE_LINE_SIZE             (64)
+#define BHB_LEN_IB                  (48)
 
 #else
 #error "Must specify a valid target"
