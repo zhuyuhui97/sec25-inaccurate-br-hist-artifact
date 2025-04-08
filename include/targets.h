@@ -96,7 +96,7 @@
 
 
 #if defined zen4
-#define SZ_BTB_EVSET                (4)
+#define SZ_BTB_EVSET                (2)
 #define BHB_LEN_IB                  (32)
 // SHOULD BE REMOVED
 #define COND_FP_BITS                (512)
