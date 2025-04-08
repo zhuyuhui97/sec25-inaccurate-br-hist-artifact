@@ -40,7 +40,7 @@ SNIPPET_DECLARE asm_br
     mov %r8, %rdi
     mov %r9, %rsi
     ops_barrier 0x10
-    mov (%r8), %r10
+    mov (%rcx), %r10
 SNIPPET_ALIGN asm_br
     jmp *%r10
 SNIPPET_END asm_br
