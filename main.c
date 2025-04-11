@@ -86,8 +86,9 @@ void do_spectre_test(test_obj_t test_specs, int idx_test)
     }
 }
 
-int main()
+int main(int argc, char **argv)
 {
+    parse_args(argc, argv);
     init_env();
     for (int i=0; i<run.nr_tests; i++)
         do_spectre_test(*run.tests[i], i);

@@ -7,6 +7,7 @@
 #include "sc_utils.h"
 #include "inline_asm.h"
 #include "tests.h"
+#include "args.h"
 
 #define NR_TEST_ITER 64
 
