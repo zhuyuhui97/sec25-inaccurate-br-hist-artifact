@@ -10,16 +10,11 @@ static struct argp_option options[] =
 	{ 0 }
 };
 
-struct arguments
-{
-    unsigned long nr_cond_bh; /* number of conditional branches */
-    unsigned long nr_ind_bh;  /* number of indirect branches */
-    unsigned long nr_evset;      /* number of evictions */
-} arguments;
+struct args_t args;
 
 static error_t parse_opt(int key, char *arg, struct argp_state *state)
 {
-    struct arguments *arguments = state->input;
+    struct args_t *arguments = state->input;
     switch (key)
     {
         case 'c':
@@ -41,8 +36,8 @@ static struct argp argp = {options, parse_opt, NULL, NULL};
 
 void parse_args(int argc, char **argv)
 {
-    arguments.nr_cond_bh = COND_FP_BITS;
-    arguments.nr_ind_bh = BHB_LEN_IB;
-    arguments.nr_evset = SZ_BTB_EVSET;
-    argp_parse(&argp, argc, argv, 0, 0, &arguments);
+    args.nr_cond_bh = COND_FP_BITS;
+    args.nr_ind_bh = BHB_LEN_IB;
+    args.nr_evset = SZ_BTB_EVSET;
+    argp_parse(&argp, argc, argv, 0, 0, &args);
 }

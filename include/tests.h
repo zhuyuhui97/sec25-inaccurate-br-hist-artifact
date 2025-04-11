@@ -7,6 +7,7 @@
 #include "inline_asm.h"
 #include "main.h"
 #include "targets.h"
+#include "args.h"
 
 void init_test_bh_chains();
 void free_test_bh_chains();
