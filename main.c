@@ -49,7 +49,7 @@ void do_spectre_test(test_obj_t test_specs, int idx_test)
 
                 branch_chain_t bh_tramp = (*current->bh_tramp_p)->jit_mem->call_entry;
                 uint64_t *bh_targets = *(current->bh_targets_p);
-                uint64_t nr_cond_bh = current->nr_cond_bh;
+                uint64_t nr_cond_bh = *(current->nr_bh_cond_p);
                 void *_frbuf = *(current->frbuf_p);
                 void *secret_p = current->secret_p;
                 uint64_t ex_argc = current->ex_argc;
@@ -67,7 +67,7 @@ void do_spectre_test(test_obj_t test_specs, int idx_test)
         // Run the test_chain and see if we can see the desired mis-speculation
         branch_chain_t bh_tramp = (*test_chain->bh_tramp_p)->jit_mem->call_entry;
         uint64_t *bh_targets = *(test_chain->bh_targets_p);
-        uint64_t nr_cond_bh = test_chain->nr_cond_bh;
+        uint64_t nr_cond_bh = *(test_chain->nr_bh_cond_p);
         char *_frbuf = *(test_chain->frbuf_p);
         char *secret_p = test_chain->secret_p;
         uint64_t ex_argc = test_chain->ex_argc;

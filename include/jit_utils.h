@@ -55,7 +55,8 @@ typedef struct {
     trampoline_obj_t **bh_tramp_p;
     void *ib_target;
     uint64_t **bh_targets_p;
-    uint64_t nr_cond_bh;
+    uint64_t *nr_bh_cond_p;
+    uint64_t *nr_bh_ind_p;
     void **ib_ptr_p;
     char **frbuf_p;
     char *secret_p;
@@ -74,7 +75,7 @@ typedef struct {
     void (*before_train)(void);
     void (*before_test)(void);
     void *bp_snippet;
-    char* description;
+    char *description;
 } test_obj_t;
 
 typedef struct {
