@@ -88,7 +88,7 @@ void free_jit_mem(jit_mem_obj_t *obj);
 trampoline_obj_t* prep_trampoline(snippet_obj_t *jump, snippet_obj_t *padding, int jump_interval, int offset, register void *req_base_addr, int mem_size);
 void free_trampoline(trampoline_obj_t *obj);
 
-uint64_t *prep_jmp_targets(uint64_t *offsets, int len, trampoline_obj_t trampoline);
+uint64_t *prep_jmp_targets(uint64_t *offsets, int len, trampoline_obj_t *trampoline);
 trampoline_obj_t* prep_aligned_snippet(snippet_obj_t *jump, void *target, uint64_t nr_const_lsb);
 
 /**

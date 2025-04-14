@@ -134,14 +134,14 @@ void free_trampoline(trampoline_obj_t *obj)
     free(obj);
 }
 
-uint64_t *prep_jmp_targets(uint64_t *offsets, int len, trampoline_obj_t trampoline)
+uint64_t *prep_jmp_targets(uint64_t *offsets, int len, trampoline_obj_t *trampoline)
 {
-    uint64_t jump_interval = trampoline.jump_interval;
-    uint64_t offset = trampoline.offset;
+    uint64_t jump_interval = trampoline->jump_interval;
+    uint64_t offset = trampoline->offset;
     uint64_t *result = malloc(len * sizeof(uint64_t));
     for (int i = 0; i < len; i++)
     {
-        result[i] = (uint64_t)trampoline.jit_mem->mem_addr + jump_interval * (offsets[i] / jump_interval) + offset;
+        result[i] = (uint64_t)trampoline->jit_mem->mem_addr + jump_interval * (offsets[i] / jump_interval) + offset;
     }
     return result;
 }

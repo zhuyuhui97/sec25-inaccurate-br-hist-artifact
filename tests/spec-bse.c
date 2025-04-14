@@ -1,6 +1,6 @@
 #include "tests.h"
 
-#define LEN_BH_CHAIN 8
+#define LEN_DUMMY_BH_CHAIN 8
 #define NR_BTB_EVICT_VICTIM 1
 #define NR_BST_TRAIN 2
 #define NR_TARGET_WARMUP_GROUPS 2
@@ -19,10 +19,8 @@ uint64_t *targets_bhb_pc_warmup[NR_TARGET_WARMUP_GROUPS] = {(uint64_t *)&targets
 
 static uint64_t offsets_btb_train[NR_BST_TRAIN] = {0x10, 0x20};
 static uint64_t offsets_btb_victim[NR_BTB_EVICT_VICTIM] = {0x100};
-uint64_t *offsets_bh_leak;
-uint64_t offsets_bh_leak_dummy[LEN_BH_CHAIN] = {0x00, 0x20, 0x40, 0x60, 0x80, 0xa0, 0xc0, 0x00};
-uint64_t *offsets_bh_safe;
-uint64_t offsets_bh_safe_dummy[LEN_BH_CHAIN] = {0x20, 0x40, 0x60, 0x80, 0xa0, 0xc0, 0x100, 0xe0};
+uint64_t offsets_bh_leak_dummy[LEN_DUMMY_BH_CHAIN] = {0x00, 0x20, 0x40, 0x60, 0x80, 0xa0, 0xc0, 0x00};
+uint64_t offsets_bh_safe_dummy[LEN_DUMMY_BH_CHAIN] = {0x20, 0x40, 0x60, 0x80, 0xa0, 0xc0, 0x100, 0xe0};
 
 static bh_chain_params_t chain_leak = {
     .bh_tramp_p = &tramp_br,
@@ -120,29 +118,25 @@ void init_btb_pc_targets()
         btb_pc_record((branch_chain_t *)(*targets_bhb_pc_warmup[i]), args.nr_ind_bh, targets_btb_train, NR_BST_TRAIN);
 }
 
+uint64_t* init_targets(uint64_t *dummy, uint64_t len_dummy, uint64_t len_bh, trampoline_obj_t *tramp, void *last)
+{
+    uint64_t *offsets_tmp = malloc((len_bh + 1) * sizeof(uint64_t));
+    int w_start = (len_bh >= len_dummy) ? len_bh - len_dummy : 0;
+    int r_start = (len_bh >= len_dummy) ? 0 : len_dummy - len_bh;
+    for (int i=0; i<w_start; i++)
+        offsets_tmp[i] = BH_OFFSET_DEFAULT;
+    for (int i=w_start; i < len_bh; i++)
+        offsets_tmp[i] = dummy[i - w_start + r_start];
+    uint64_t* targets = prep_jmp_targets(offsets_tmp, len_bh + 1, tramp);
+    targets[len_bh] = (uint64_t)last;
+    free(offsets_tmp);
+    return targets;
+}
+
 void init_test_bh_chains()
 {
-    offsets_bh_leak = malloc((args.nr_ind_bh+1) * sizeof(uint64_t));
-    int w_start = (args.nr_ind_bh >= LEN_BH_CHAIN) ? args.nr_ind_bh - LEN_BH_CHAIN : 0;
-    int r_start = (args.nr_ind_bh >= LEN_BH_CHAIN) ? 0 : LEN_BH_CHAIN - args.nr_ind_bh;
-    for (int i=0; i<w_start; i++)
-        offsets_bh_leak[i] = BH_OFFSET_DEFAULT;
-    for (int i=w_start; i < args.nr_ind_bh; i++)
-        offsets_bh_leak[i] = offsets_bh_leak_dummy[i - w_start + r_start];
-    targets_bh_leak = prep_jmp_targets(offsets_bh_leak, args.nr_ind_bh + 1, *tramp_br);
-    targets_bh_leak[args.nr_ind_bh] = (uint64_t)&asm_br;
-    free(offsets_bh_leak);
-
-    offsets_bh_safe = malloc((args.nr_ind_bh+1) * sizeof(uint64_t));
-    w_start = (args.nr_ind_bh >= LEN_BH_CHAIN) ? args.nr_ind_bh - LEN_BH_CHAIN : 0;
-    r_start = (args.nr_ind_bh >= LEN_BH_CHAIN) ? 0 : LEN_BH_CHAIN - args.nr_ind_bh;
-    for (int i=0; i<w_start; i++)
-        offsets_bh_safe[i] = BH_OFFSET_DEFAULT;
-    for (int i=w_start; i < args.nr_ind_bh; i++)
-        offsets_bh_safe[i] = offsets_bh_safe_dummy[i - w_start + r_start];
-    targets_bh_safe = prep_jmp_targets(offsets_bh_safe, args.nr_ind_bh + 1, *tramp_br);
-    targets_bh_safe[args.nr_ind_bh] = (uint64_t)&asm_br;
-    free(offsets_bh_safe);
+    targets_bh_leak = init_targets(offsets_bh_leak_dummy, LEN_DUMMY_BH_CHAIN, args.nr_ind_bh, tramp_br, &asm_br);
+    targets_bh_safe = init_targets(offsets_bh_safe_dummy, LEN_DUMMY_BH_CHAIN, args.nr_ind_bh, tramp_br, &asm_br);
 }
 
 void free_test_bh_chains()
@@ -158,10 +152,10 @@ void walk_evset()
 
 void init_evset()
 {
-    targets_btb_train = prep_jmp_targets(offsets_btb_train, NR_BST_TRAIN, *tramp_ret);
+    targets_btb_train = prep_jmp_targets(offsets_btb_train, NR_BST_TRAIN, tramp_ret);
     snippets_evset = malloc(NR_BTB_EVICT_VICTIM * args.nr_evset * sizeof(trampoline_obj_t *));
     targets_btb_pc_evset = malloc(NR_BTB_EVICT_VICTIM * args.nr_evset * sizeof(branch_chain_t *));
-    uint64_t *targets_btb_victim = prep_jmp_targets(offsets_btb_victim, NR_BTB_EVICT_VICTIM, *tramp_br);
+    uint64_t *targets_btb_victim = prep_jmp_targets(offsets_btb_victim, NR_BTB_EVICT_VICTIM, tramp_br);
     int tramp_snippet_offset = tramp_br->jump_snippet->align - tramp_br->jump_snippet->entry;
     for (int i = 0; i < NR_BTB_EVICT_VICTIM; i++)
     {
