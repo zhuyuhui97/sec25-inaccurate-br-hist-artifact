@@ -64,11 +64,11 @@ run_obj_t run = {
 
 void init_test_bh_chains()
 {
-    offsets_bh = malloc(BHB_LEN_IB * sizeof(uint64_t));
-    for (int i = 0; i < BHB_LEN_IB; i++)
+    offsets_bh = malloc((args.nr_ind_bh + 1) * sizeof(uint64_t));
+    for (int i = 0; i < (args.nr_ind_bh + 1); i++)
         offsets_bh[i] = ((i+1)<<5) & (0x1000-1);
-    targets_bh = prep_jmp_targets(offsets_bh, BHB_LEN_IB, tramp_br);
-    targets_bh[BHB_LEN_IB - 1] = (uint64_t)&asm_bhs_br;
+    targets_bh = prep_jmp_targets(offsets_bh, (args.nr_ind_bh + 1), tramp_br);
+    targets_bh[args.nr_ind_bh] = (uint64_t)&asm_bhs_br;
 }
 
 void free_test_bh_chains()
@@ -94,8 +94,8 @@ void init_evset()
     targets_btb_bh_evset = malloc(args.nr_evset * sizeof(uint64_t *));
     for (int i = 0; i < args.nr_evset; i++)
     {
-        targets_btb_bh_evset[i] = prep_jmp_targets(offsets_bh, BHB_LEN_IB, tramp_br);
-        targets_btb_bh_evset[i][BHB_LEN_IB - 1] = (uint64_t)tramp_btb_bh_evset[i]->jit_mem->call_entry;
+        targets_btb_bh_evset[i] = prep_jmp_targets(offsets_bh, (args.nr_ind_bh + 1), tramp_br);
+        targets_btb_bh_evset[i][args.nr_ind_bh] = (uint64_t)tramp_btb_bh_evset[i]->jit_mem->call_entry;
     }
 }
 
