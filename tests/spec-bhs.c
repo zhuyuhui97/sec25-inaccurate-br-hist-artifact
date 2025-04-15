@@ -1,6 +1,8 @@
 #include "tests.h"
 
-void walk_btb_bh_evset();
+struct argp_child argp_child_test[] = {0};
+
+void walk_evset();
 
 uint64_t *offsets_bh;
 uint64_t *targets_bh;
@@ -62,6 +64,14 @@ run_obj_t run = {
     .tests = {&test_spec_bhs}
 };
 
+uint64_t test_continue = true;
+bool iter_test()
+{
+    bool ret = test_continue;
+    test_continue &= false;
+    return ret;
+}
+
 void init_test_bh_chains()
 {
     offsets_bh = malloc((args.nr_ind_bh + 1) * sizeof(uint64_t));
@@ -77,7 +87,6 @@ void free_test_bh_chains()
     free(targets_bh);
 }
 
-
 void walk_evset()
 {
     OPS_BARRIER(0x10);
@@ -86,7 +95,7 @@ void walk_evset()
     OPS_BARRIER(0x10);
 }
 
-void init_evset()
+void init_test_evset()
 {
     tramp_btb_bh_evset = malloc(args.nr_evset * sizeof(trampoline_obj_t *));
     for (int i = 0; i < args.nr_evset; i++)
@@ -99,10 +108,22 @@ void init_evset()
     }
 }
 
-void free_evset()
+void free_test_evset()
 {
     for (int i = 0; i < args.nr_evset; i++) free(targets_btb_bh_evset[i]);
     free(targets_btb_bh_evset);
     for (int i = 0; i < args.nr_evset; i++) free_trampoline(tramp_btb_bh_evset[i]);
     free(tramp_btb_bh_evset);
+}
+
+void init_test()
+{
+    init_test_bh_chains();
+    init_test_evset();
+}
+
+void free_test()
+{
+    free_test_bh_chains();
+    free_test_evset();
 }

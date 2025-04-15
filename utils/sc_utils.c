@@ -8,7 +8,7 @@
 
 char *frbuf;
 uint64_t frbuf_size;
-int mem_fast = 0, mem_slow = 0;
+uint64_t mem_fast = 0, mem_slow = 0;
 
 char *init_frbuf(int slots, int stride)
 {

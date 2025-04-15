@@ -2,12 +2,14 @@
 
 void init_env();
 void print_result();
+void print_cache_latency();
 void free_env();
 
 __attribute__((aligned(4096)))
 uint64_t **res_cycles;
 trampoline_obj_t *tramp_ret;
 trampoline_obj_t *tramp_br;
+uint64_t mem_threshold;
 
 __attribute__((aligned(4096))) 
 void *ib_ptr = &t_leak;
@@ -90,9 +92,14 @@ int main(int argc, char **argv)
 {
     parse_args(argc, argv);
     init_env();
-    for (int i=0; i<run.nr_tests; i++)
-        do_spectre_test(*run.tests[i], i);
-    print_result();
+    while (iter_test())
+    {
+        init_test();
+        for (int i=0; i<run.nr_tests; i++)
+            do_spectre_test(*run.tests[i], i);
+        print_result();
+        free_test();
+    }
     free_env();
     return 0;
 }
@@ -101,6 +108,8 @@ void init_res_buffers()
 {
     init_frbuf(256, SIZE_CACHE_STRIDE);
     test_mem_latency(SC_ENCODE_ADDR(frbuf, &dummy_secret), NR_TEST_ITER);
+    mem_threshold = mem_fast + (mem_slow - mem_fast)*0.2;
+    print_cache_latency();
     res_cycles = malloc(run.nr_tests * sizeof(uint64_t));
     for (int i = 0; i < run.nr_tests; i++)
         res_cycles[i] = malloc(run.tests[i]->nr_repeat * sizeof(uint64_t));
@@ -116,25 +125,27 @@ void init_env()
 {
     init_res_buffers();
     init_trampolines();
-    init_test_bh_chains();
-    init_evset();
 }
 
 void print_result()
 {
-    printf("Memory access latency (average of %d tests): \n", NR_TEST_ITER);
-    printf("slow access: %d\n", mem_slow);
-    printf("fast access: %d\n", mem_fast);
-    printf("\n");
-
     for (int i=0; i<run.nr_tests; i++)
     {
-        int sum = 0;
+        uint64_t sum = 0;
         printf("--- Test %d: %s\n", i, run.tests[i]->description);
         for (int round = 0; round < run.tests[i]->nr_repeat; round++)
             sum += res_cycles[i][round];
         printf("Probe access latency (average of %d tests): %d\n\n", run.tests[i]->nr_repeat, sum / run.tests[i]->nr_repeat);
     }
+}
+
+void print_cache_latency()
+{
+    printf("Memory access latency (average of %d tests): \n", NR_TEST_ITER);
+    printf("slow access: %d\n", mem_slow);
+    printf("fast access: %d\n", mem_fast);
+    printf("threshold: %d\n", mem_threshold);
+    printf("\n");
 }
 
 void free_res_buffers()
@@ -154,6 +165,4 @@ void free_env()
 {
     free_res_buffers();
     free_trampolines();
-    free_test_bh_chains();
-    free_evset();
 }

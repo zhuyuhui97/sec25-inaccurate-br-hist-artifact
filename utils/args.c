@@ -2,11 +2,12 @@
 #include <stdlib.h>
 #include "args.h"
 #include "targets.h"
+#include "tests.h"
 static struct argp_option options[] =
 {
-    {"cb",    'c',    "n.",     0,      NULL},
-    {"ib",    'i',    "n.",     0,      NULL},
-    {"ev",    'e',    "n.",     0,      NULL},
+    {"cb",    'c',    "n",     0,      "Number of conditional branches populating the BHB."},
+    {"ib",    'i',    "n",     0,      "Number of indirect branches populating the BHB."},
+    {"ev",    'e',    "n",     0,      "Size of BTB eviction set."},
 	{ 0 }
 };
 
@@ -32,7 +33,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
     return 0;
 }
 
-static struct argp argp = {options, parse_opt, NULL, NULL};
+static struct argp argp = {options, parse_opt, NULL, NULL, argp_child_test};
 
 void parse_args(int argc, char **argv)
 {

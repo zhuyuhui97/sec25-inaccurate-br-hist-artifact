@@ -9,12 +9,12 @@
 #include "targets.h"
 #include "args.h"
 
-void init_test_bh_chains();
-void free_test_bh_chains();
-void walk_evset();
-void init_evset();
-void free_evset();
+bool iter_test();
+void init_test();
+void free_test();
+void print_test_info();
 
 extern run_obj_t run;
+extern struct argp_child argp_child_test[];
 
 #endif

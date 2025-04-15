@@ -6,6 +6,8 @@
 #define NR_TARGET_WARMUP_GROUPS 2
 #define BH_OFFSET_DEFAULT 0x20
 
+struct argp_child argp_child_test[] = {0};
+
 void init_btb_pc_targets();
 void walk_evset();
 
@@ -104,6 +106,14 @@ run_obj_t run = {
     .tests = {&test_spec_v2, &test_spec_bse_no_ev, &test_spec_bse}
 };
 
+uint64_t test_continue = true;
+bool iter_test()
+{
+    bool ret = test_continue;
+    test_continue &= false;
+    return ret;
+}
+
 void btb_pc_record(branch_chain_t *branches, int nr_branches, uint64_t *targets, int64_t nr_targets)
 {
     for (int i = 0; i < nr_branches; i++)
@@ -150,7 +160,7 @@ void walk_evset()
     btb_pc_record(targets_btb_pc_evset, NR_BTB_EVICT_VICTIM * args.nr_evset, targets_btb_train, NR_BST_TRAIN);
 }
 
-void init_evset()
+void init_test_evset()
 {
     targets_btb_train = prep_jmp_targets(offsets_btb_train, NR_BST_TRAIN, tramp_ret);
     snippets_evset = malloc(NR_BTB_EVICT_VICTIM * args.nr_evset * sizeof(trampoline_obj_t *));
@@ -169,11 +179,23 @@ void init_evset()
     free(targets_btb_victim);
 }
 
-void free_evset()
+void free_test_evset()
 {
     for (int i = 0; i < NR_BTB_EVICT_VICTIM * args.nr_evset; i++)
         free_trampoline(snippets_evset[i]);
     free(snippets_evset);
     free(targets_btb_pc_evset);
     free(targets_btb_train);
+}
+
+void init_test()
+{
+    init_test_bh_chains();
+    init_test_evset();
+}
+
+void free_test()
+{
+    free_test_bh_chains();
+    free_test_evset();
 }
