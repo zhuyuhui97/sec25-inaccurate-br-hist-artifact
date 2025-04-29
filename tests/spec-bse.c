@@ -32,18 +32,18 @@ static bh_chain_params_t chain_leak = {
     .nr_bh_ind_p = &args.nr_ind_bh,
     .ib_ptr_p = &ib_ptr,
     .frbuf_p = &frbuf,
-    .secret_p = &dummy_secret
+    .secret_p = DUMMY_SECRET_P
 };
 
 static bh_chain_params_t chain_safe = {
     .bh_tramp_p = &tramp_br,
-    .ib_target = &t_empty,
+    .ib_target = &t_alt,
     .bh_targets_p = &targets_bh_safe,
     .nr_bh_cond_p = &args.nr_cond_bh,
     .nr_bh_ind_p = &args.nr_ind_bh,
     .ib_ptr_p = &ib_ptr,
     .frbuf_p = &frbuf,
-    .secret_p = &dummy_secret
+    .secret_p = DUMMY_SECRET_P
 };
 
 static bh_chain_params_t chain_mispred = {
@@ -54,7 +54,7 @@ static bh_chain_params_t chain_mispred = {
     .nr_bh_ind_p = &args.nr_ind_bh,
     .ib_ptr_p = &ib_ptr,
     .frbuf_p = &frbuf,
-    .secret_p = &dummy_secret
+    .secret_p = DUMMY_SECRET_P
 };
 
 static bh_chain_params_t *train_chains[2] = {&chain_leak, &chain_safe};
@@ -70,6 +70,8 @@ test_obj_t test_spec_v2 = {
     .before_train = &init_btb_pc_targets,
     .before_test = &t_empty,
     .bp_snippet = &asm_br,
+    .nr_probes = 2,
+    .probes_p = (char *[]){DUMMY_SECRET_P, DUMMY_SECRET_ALT_P},
     .description = "Spectre-v2"
 };
 
@@ -84,6 +86,8 @@ test_obj_t test_spec_bse_no_ev = {
     .before_train = &init_btb_pc_targets,
     .before_test = &t_empty,
     .bp_snippet = &asm_br,
+    .nr_probes = 2,
+    .probes_p = (char *[]){DUMMY_SECRET_P, DUMMY_SECRET_ALT_P},
     .description = "Different BH"
 };
 
@@ -98,6 +102,8 @@ test_obj_t test_spec_bse = {
     .before_train = &init_btb_pc_targets,
     .before_test = &walk_evset,
     .bp_snippet = &asm_br,
+    .nr_probes = 2,
+    .probes_p = (char *[]){DUMMY_SECRET_P, DUMMY_SECRET_ALT_P},
     .description = "Different BH with Spectre-BSE"
 };
 

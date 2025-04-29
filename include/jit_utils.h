@@ -44,13 +44,6 @@ typedef struct
     jit_mem_obj_t *jit_mem;
 } trampoline_obj_t;
 
-// enum test_type {
-//     TEST_SPEC_V2,
-//     TEST_SPEC_NO_BSE,
-//     TEST_SPEC_BSE,
-//     NR_TESTS,
-// };
-
 typedef struct {
     trampoline_obj_t **bh_tramp_p;
     void *ib_target;
@@ -75,6 +68,8 @@ typedef struct {
     void (*before_train)(void);
     void (*before_test)(void);
     void *bp_snippet;
+    uint64_t nr_probes;
+    char **probes_p;
     char *description;
 } test_obj_t;
 

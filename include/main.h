@@ -16,9 +16,6 @@ extern trampoline_obj_t *tramp_br;
 
 extern void *ib_ptr;
 
-extern uint8_t dummy_secret;
-extern void *ib_ptr_empty;
-
 void goto_chain(branch_chain_t br_chain, uint64_t *bh_targets, void **ib_ptr_p, int nr_cond_bh, void *frbuf, void *secret_p, uint64_t ex_argc, char **ex_argv);
 
 

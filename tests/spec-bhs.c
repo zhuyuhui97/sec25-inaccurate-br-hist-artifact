@@ -19,13 +19,13 @@ static void *bhs_dc_flush[2] = {&bhs_bcond_tt, &bhs_bcond_nt};
 
 static bh_chain_params_t chain_bhs_safe = {
     .bh_tramp_p = &tramp_br,
-    .ib_target = &t_empty,
+    .ib_target = &t_alt,
     .bh_targets_p = &targets_bh,
     .nr_bh_cond_p = &args.nr_cond_bh,
     .nr_bh_ind_p = &args.nr_ind_bh,
     .ib_ptr_p = &ib_ptr,
     .frbuf_p = &frbuf,
-    .secret_p = &dummy_secret,
+    .secret_p = DUMMY_SECRET_P,
     .ex_argc = 1,
     .ex_argv = (char **)&argv_bhs_safe
 };
@@ -38,24 +38,37 @@ static bh_chain_params_t chain_bhs_leak = {
     .nr_bh_ind_p = &args.nr_ind_bh,
     .ib_ptr_p = &ib_ptr,
     .frbuf_p = &frbuf,
-    .secret_p = &dummy_secret,
+    .secret_p = DUMMY_SECRET_P,
     .ex_argc = 1,
     .ex_argv = (char **)&argv_bhs_leak
 };
 
-static bh_chain_params_t *train_chains_bhs[3] = {&chain_bhs_leak, &chain_bhs_safe, &chain_bhs_safe};
+static bh_chain_params_t chain_bhs_test = {
+    .bh_tramp_p = &tramp_br,
+    .ib_target = &t_empty,
+    .bh_targets_p = &targets_bh,
+    .nr_bh_cond_p = &args.nr_cond_bh,
+    .nr_bh_ind_p = &args.nr_ind_bh,
+    .ib_ptr_p = &ib_ptr,
+    .frbuf_p = &frbuf,
+    .secret_p = DUMMY_SECRET_P,
+    .ex_argc = 1,
+    .ex_argv = (char **)&argv_bhs_safe
+};
 
 test_obj_t test_spec_bhs = {
     .nr_repeat = NR_TEST_ITER,
-    .nr_train_passes = 32,
+    .nr_train_passes = 2,
     .nr_train_chains = 2,
-    .train_chains = (bh_chain_params_t **)train_chains_bhs,
-    .test_chain = &chain_bhs_safe,
+    .train_chains = (bh_chain_params_t *[]){&chain_bhs_leak, &chain_bhs_safe, &chain_bhs_safe},
+    .test_chain = &chain_bhs_test,
     .nr_dc_flush = 2,
     .dc_flush = (void **)&bhs_dc_flush,
     .before_train = &t_empty,
     .before_test = &walk_evset,
     .bp_snippet = &asm_bhs_br,
+    .nr_probes = 2,
+    .probes_p = (char *[]){DUMMY_SECRET_P, DUMMY_SECRET_ALT_P},
     .description = "Different BH with Spectre-BHS"
 };
 
@@ -90,6 +103,7 @@ void free_test_bh_chains()
 void walk_evset()
 {
     OPS_BARRIER(0x10);
+    void *ib_ptr_empty = &t_empty;
     for (int i = 0; i < args.nr_evset; i++)
         goto_chain(tramp_br->jit_mem->call_entry, targets_btb_bh_evset[i], &ib_ptr_empty, COND_FP_BITS, NULL, NULL, 0, NULL);
     OPS_BARRIER(0x10);

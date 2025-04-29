@@ -78,7 +78,7 @@ static bh_chain_params_t chain_leak = {
     .nr_bh_ind_p = &args.nr_ind_bh,
     .ib_ptr_p = &ib_ptr,
     .frbuf_p = &frbuf,
-    .secret_p = &dummy_secret};
+    .secret_p = DUMMY_SECRET_P};
 
 static bh_chain_params_t chain_safe = {
     .bh_tramp_p = &tramp_br,
@@ -88,7 +88,7 @@ static bh_chain_params_t chain_safe = {
     .nr_bh_ind_p = &args.nr_ind_bh,
     .ib_ptr_p = &ib_ptr,
     .frbuf_p = &frbuf,
-    .secret_p = &dummy_secret};
+    .secret_p = DUMMY_SECRET_P};
 
 test_obj_t test_spec_v2 = {
     .nr_repeat = 16,
@@ -101,6 +101,8 @@ test_obj_t test_spec_v2 = {
     .before_train = &init_btb_pc_targets,
     .before_test = &t_empty,
     .bp_snippet = &asm_br,
+    .nr_probes = 1,
+    .probes_p = (char *[]){DUMMY_SECRET_P},
     .description = "Spectre-v2"};
 
 run_obj_t run = {
