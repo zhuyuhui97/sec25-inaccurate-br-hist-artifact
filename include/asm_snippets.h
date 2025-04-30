@@ -1,6 +1,6 @@
-#include <stdint.h>
 #ifndef __JIT_SNIPPETS_H__
 #define __JIT_SNIPPETS_H__
+#include <stdint.h>
 
 typedef struct 
 {
