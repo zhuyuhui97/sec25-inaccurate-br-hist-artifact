@@ -113,7 +113,7 @@ void init_test_evset()
 {
     tramp_btb_bh_evset = malloc(args.nr_evset * sizeof(trampoline_obj_t *));
     for (int i = 0; i < args.nr_evset; i++)
-        tramp_btb_bh_evset[i] = prep_aligned_snippet(&jit_bhs_evict_obj, (void *)args.victim_snippet_base, 16);
+        tramp_btb_bh_evset[i] = prep_aligned_snippet(&jit_bhs_evict_obj, (void *)args.victim_snippet_base, 24);
     targets_btb_bh_evset = malloc(args.nr_evset * sizeof(uint64_t *));
     for (int i = 0; i < args.nr_evset; i++)
     {
