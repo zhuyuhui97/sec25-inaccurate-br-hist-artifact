@@ -51,7 +51,7 @@ SNIPPET_DECLARE asm_bhs_br
     cmp $0, %r11
 SNIPPET_ALIGN asm_bhs_br
     jg asm_bhs_br_jg_target
-    padding_nop 32
+    padding_nop 8
 asm_bhs_br_jg_target:
     mov %r8, %rdi
     mov %r9, %rsi
@@ -65,7 +65,7 @@ SNIPPET_DECLARE jit_bhs_evict
     cmp $0, %r10
 SNIPPET_ALIGN jit_bhs_evict
     jg jit_bhs_evict_target
+    padding_nop 32
 jit_bhs_evict_target:
-    padding_nop 64
     ret
 SNIPPET_END jit_bhs_evict

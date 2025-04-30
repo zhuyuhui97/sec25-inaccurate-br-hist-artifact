@@ -4,6 +4,13 @@
 #include "jit_utils.h"
 #include "targets.h"
 
+__attribute__((aligned(0x1000)))
+uint8_t cacheline_mem[0x1000] = {0};
+
+trampoline_obj_t *tramp_ret;
+trampoline_obj_t *tramp_br;
+trampoline_obj_t *tramp_victim;
+
 uint64_t os_page_size = 0;
 #define MASK_IN_PAGE_OFFSET (os_page_size-1)
 
@@ -36,7 +43,7 @@ void free_jit_mem(jit_mem_obj_t *obj)
     free(obj);
 }
 
-trampoline_obj_t* prep_trampoline(snippet_obj_t *jump, snippet_obj_t *padding, int jump_interval, int offset, register void *req_base_addr, int mem_size)
+trampoline_obj_t* prep_trampoline(snippet_obj_t *jump, snippet_obj_t *padding, int jump_interval, int offset, register void *req_base_addr, uint64_t mem_size)
 {
     trampoline_obj_t *result = NULL;
     assert(jump != NULL);

@@ -11,6 +11,7 @@
 #include "asm_snippets.h"
 #include "inline_asm.h"
 
+#define NR_TEST_ITER 64
 #define BASE_BTB_EVICT      VOIDPTR(0x6000000)
 #define BASE_BHB_POPULATE   VOIDPTR(0x7000000)
 #define BASE_RET_MEM        VOIDPTR(0xf00000)
@@ -67,7 +68,6 @@ typedef struct {
     void **dc_flush;
     void (*before_train)(void);
     void (*before_test)(void);
-    void *bp_snippet;
     uint64_t nr_probes;
     char **probes_p;
     char *description;
@@ -75,12 +75,22 @@ typedef struct {
 
 typedef struct {
     uint64_t nr_tests;
+    void *bp_snippet;
     test_obj_t* tests[];
 } run_obj_t;
 
+extern trampoline_obj_t *tramp_ret;
+extern trampoline_obj_t *tramp_br;
+extern trampoline_obj_t *tramp_victim;
+extern uint8_t cacheline_mem[0x1000];
+#define IBPTR ((void*)(&cacheline_mem[0x140]))
+
+// In main.c
+void goto_chain(branch_chain_t br_chain, uint64_t *bh_targets, void **ib_ptr_p, int nr_cond_bh, void *frbuf, void *secret_p, uint64_t ex_argc, char **ex_argv);
+
 jit_mem_obj_t *reg_jit_mem(void* entry, void* addr, uint64_t size, enum ALLOC_METHOD method);
 void free_jit_mem(jit_mem_obj_t *obj);
-trampoline_obj_t* prep_trampoline(snippet_obj_t *jump, snippet_obj_t *padding, int jump_interval, int offset, register void *req_base_addr, int mem_size);
+trampoline_obj_t* prep_trampoline(snippet_obj_t *jump, snippet_obj_t *padding, int jump_interval, int offset, register void *req_base_addr, uint64_t mem_size);
 void free_trampoline(trampoline_obj_t *obj);
 
 uint64_t *prep_jmp_targets(uint64_t *offsets, int len, trampoline_obj_t *trampoline);

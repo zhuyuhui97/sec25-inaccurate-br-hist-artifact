@@ -100,13 +100,13 @@ test_obj_t test_spec_v2 = {
     .dc_flush = NULL,
     .before_train = &init_btb_pc_targets,
     .before_test = &t_empty,
-    .bp_snippet = &asm_br,
     .nr_probes = 1,
     .probes_p = (char *[]){DUMMY_SECRET_P},
     .description = "Spectre-v2"};
 
 run_obj_t run = {
     .nr_tests = 1,
+    .bp_snippet = &asm_br_obj,
     .tests = {&test_spec_v2}};
 
 void btb_pc_record(branch_chain_t *branches, int nr_branches, uint64_t *targets, int64_t nr_targets)
@@ -138,7 +138,7 @@ uint64_t *init_targets(uint64_t *dummy, uint64_t len_dummy, uint64_t len_bh, tra
     return targets;
 }
 
-bool iter_test()
+bool next_run()
 {
     if (offsets_bh_train == NULL && offsets_bh_victim == NULL)
     {

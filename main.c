@@ -1,4 +1,10 @@
-#include "main.h"
+#include <linux/types.h>
+#include "jit_utils.h"
+#include "c_snippets.h"
+#include "sc_utils.h"
+#include "inline_asm.h"
+#include "tests.h"
+#include "args.h"
 
 void init_env();
 void print_result();
@@ -7,12 +13,7 @@ void free_env();
 
 __attribute__((aligned(4096)))
 uint64_t **res_cycles;
-trampoline_obj_t *tramp_ret;
-trampoline_obj_t *tramp_br;
 uint64_t mem_threshold;
-
-__attribute__((aligned(4096))) 
-void *ib_ptr = &t_leak;
 
 void goto_chain(branch_chain_t br_chain, uint64_t *bh_targets, void **ib_ptr_p, int nr_cond_bh, void *frbuf, void *secret_p, uint64_t ex_argc, char **ex_argv)
 {
@@ -90,7 +91,7 @@ int main(int argc, char **argv)
 {
     parse_args(argc, argv);
     init_env();
-    while (iter_test())
+    while (next_run())
     {
         init_test();
         for (int i=0; i<run.nr_tests; i++)
@@ -115,8 +116,9 @@ void init_res_buffers()
 
 void init_trampolines()
 {
-    tramp_ret = prep_trampoline(&jit_ret_obj, &jit_nop_obj, 16, 0, BASE_RET_MEM, 0x1000);
-    tramp_br = prep_trampoline(&jit_br_and_inc_idx_obj, NULL, 0, 0, BASE_BHB_POPULATE, 0x1000);
+    tramp_ret = prep_trampoline(&jit_ret_obj, &jit_nop_obj, 16, 0, BASE_RET_MEM, 1ull<<args.tramp_bits);
+    tramp_br = prep_trampoline(&jit_br_and_inc_idx_obj, NULL, 0, 0, BASE_BHB_POPULATE, 1ull<<args.tramp_bits);
+    tramp_victim = prep_aligned_snippet(run.bp_snippet, (void *)args.victim_snippet_base, 24);
 }
 
 void init_env()
@@ -163,6 +165,7 @@ void free_trampolines()
 {
     free_trampoline(tramp_ret);
     free_trampoline(tramp_br);
+    free_trampoline(tramp_victim);
 }
 
 void free_env()

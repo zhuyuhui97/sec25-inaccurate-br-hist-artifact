@@ -23,7 +23,7 @@ static bh_chain_params_t chain_bhs_safe = {
     .bh_targets_p = &targets_bh,
     .nr_bh_cond_p = &args.nr_cond_bh,
     .nr_bh_ind_p = &args.nr_ind_bh,
-    .ib_ptr_p = &ib_ptr,
+    .ib_ptr_p = IBPTR,
     .frbuf_p = &frbuf,
     .secret_p = DUMMY_SECRET_P,
     .ex_argc = 1,
@@ -36,7 +36,7 @@ static bh_chain_params_t chain_bhs_leak = {
     .bh_targets_p = &targets_bh,
     .nr_bh_cond_p = &args.nr_cond_bh,
     .nr_bh_ind_p = &args.nr_ind_bh,
-    .ib_ptr_p = &ib_ptr,
+    .ib_ptr_p = IBPTR,
     .frbuf_p = &frbuf,
     .secret_p = DUMMY_SECRET_P,
     .ex_argc = 1,
@@ -49,7 +49,7 @@ static bh_chain_params_t chain_bhs_test = {
     .bh_targets_p = &targets_bh,
     .nr_bh_cond_p = &args.nr_cond_bh,
     .nr_bh_ind_p = &args.nr_ind_bh,
-    .ib_ptr_p = &ib_ptr,
+    .ib_ptr_p = IBPTR,
     .frbuf_p = &frbuf,
     .secret_p = DUMMY_SECRET_P,
     .ex_argc = 1,
@@ -66,7 +66,6 @@ test_obj_t test_spec_bhs = {
     .dc_flush = (void **)&bhs_dc_flush,
     .before_train = &t_empty,
     .before_test = &walk_evset,
-    .bp_snippet = &asm_bhs_br,
     .nr_probes = 2,
     .probes_p = (char *[]){DUMMY_SECRET_P, DUMMY_SECRET_ALT_P},
     .description = "Different BH with Spectre-BHS"
@@ -74,11 +73,12 @@ test_obj_t test_spec_bhs = {
 
 run_obj_t run = {
     .nr_tests = 1,
+    .bp_snippet = &asm_bhs_br_obj,
     .tests = {&test_spec_bhs}
 };
 
 uint64_t test_continue = true;
-bool iter_test()
+bool next_run()
 {
     bool ret = test_continue;
     test_continue &= false;
@@ -91,7 +91,7 @@ void init_test_bh_chains()
     for (int i = 0; i < (args.nr_ind_bh + 1); i++)
         offsets_bh[i] = ((i+1)<<5) & (0x1000-1);
     targets_bh = prep_jmp_targets(offsets_bh, (args.nr_ind_bh + 1), tramp_br);
-    targets_bh[args.nr_ind_bh] = (uint64_t)&asm_bhs_br;
+    targets_bh[args.nr_ind_bh] = (uint64_t)tramp_victim->jit_mem->call_entry;
 }
 
 void free_test_bh_chains()
@@ -113,7 +113,7 @@ void init_test_evset()
 {
     tramp_btb_bh_evset = malloc(args.nr_evset * sizeof(trampoline_obj_t *));
     for (int i = 0; i < args.nr_evset; i++)
-        tramp_btb_bh_evset[i] = prep_aligned_snippet(&jit_bhs_evict_obj, &__asm_bhs_br_align, 16);
+        tramp_btb_bh_evset[i] = prep_aligned_snippet(&jit_bhs_evict_obj, (void *)args.victim_snippet_base, 16);
     targets_btb_bh_evset = malloc(args.nr_evset * sizeof(uint64_t *));
     for (int i = 0; i < args.nr_evset; i++)
     {

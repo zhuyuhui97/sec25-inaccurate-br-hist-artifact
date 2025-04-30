@@ -5,11 +5,10 @@
 #include "c_snippets.h"
 #include "sc_utils.h"
 #include "inline_asm.h"
-#include "main.h"
 #include "targets.h"
 #include "args.h"
 
-bool iter_test();
+bool next_run();
 void init_test();
 void free_test();
 void print_test_info();

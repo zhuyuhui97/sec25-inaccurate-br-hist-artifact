@@ -30,7 +30,7 @@ static bh_chain_params_t chain_leak = {
     .bh_targets_p = &targets_bh_leak,
     .nr_bh_cond_p = &args.nr_cond_bh,
     .nr_bh_ind_p = &args.nr_ind_bh,
-    .ib_ptr_p = &ib_ptr,
+    .ib_ptr_p = IBPTR,
     .frbuf_p = &frbuf,
     .secret_p = DUMMY_SECRET_P
 };
@@ -41,7 +41,7 @@ static bh_chain_params_t chain_safe = {
     .bh_targets_p = &targets_bh_safe,
     .nr_bh_cond_p = &args.nr_cond_bh,
     .nr_bh_ind_p = &args.nr_ind_bh,
-    .ib_ptr_p = &ib_ptr,
+    .ib_ptr_p = IBPTR,
     .frbuf_p = &frbuf,
     .secret_p = DUMMY_SECRET_P
 };
@@ -52,7 +52,7 @@ static bh_chain_params_t chain_mispred = {
     .bh_targets_p = &targets_bh_leak,
     .nr_bh_cond_p = &args.nr_cond_bh,
     .nr_bh_ind_p = &args.nr_ind_bh,
-    .ib_ptr_p = &ib_ptr,
+    .ib_ptr_p = IBPTR,
     .frbuf_p = &frbuf,
     .secret_p = DUMMY_SECRET_P
 };
@@ -69,7 +69,6 @@ test_obj_t test_spec_v2 = {
     .dc_flush = NULL,
     .before_train = &init_btb_pc_targets,
     .before_test = &t_empty,
-    .bp_snippet = &asm_br,
     .nr_probes = 2,
     .probes_p = (char *[]){DUMMY_SECRET_P, DUMMY_SECRET_ALT_P},
     .description = "Spectre-v2"
@@ -85,7 +84,6 @@ test_obj_t test_spec_bse_no_ev = {
     .dc_flush = NULL,
     .before_train = &init_btb_pc_targets,
     .before_test = &t_empty,
-    .bp_snippet = &asm_br,
     .nr_probes = 2,
     .probes_p = (char *[]){DUMMY_SECRET_P, DUMMY_SECRET_ALT_P},
     .description = "Different BH"
@@ -101,7 +99,6 @@ test_obj_t test_spec_bse = {
     .dc_flush = NULL,
     .before_train = &init_btb_pc_targets,
     .before_test = &walk_evset,
-    .bp_snippet = &asm_br,
     .nr_probes = 2,
     .probes_p = (char *[]){DUMMY_SECRET_P, DUMMY_SECRET_ALT_P},
     .description = "Different BH with Spectre-BSE"
@@ -109,11 +106,12 @@ test_obj_t test_spec_bse = {
 
 run_obj_t run = {
     .nr_tests = 3,
+    .bp_snippet = &asm_br_obj,
     .tests = {&test_spec_v2, &test_spec_bse_no_ev, &test_spec_bse}
 };
 
 uint64_t test_continue = true;
-bool iter_test()
+bool next_run()
 {
     bool ret = test_continue;
     test_continue &= false;
@@ -151,8 +149,8 @@ uint64_t* init_targets(uint64_t *dummy, uint64_t len_dummy, uint64_t len_bh, tra
 
 void init_test_bh_chains()
 {
-    targets_bh_leak = init_targets(offsets_bh_leak_dummy, LEN_DUMMY_BH_CHAIN, args.nr_ind_bh, tramp_br, &asm_br);
-    targets_bh_safe = init_targets(offsets_bh_safe_dummy, LEN_DUMMY_BH_CHAIN, args.nr_ind_bh, tramp_br, &asm_br);
+    targets_bh_leak = init_targets(offsets_bh_leak_dummy, LEN_DUMMY_BH_CHAIN, args.nr_ind_bh, tramp_br, tramp_victim->jit_mem->call_entry);
+    targets_bh_safe = init_targets(offsets_bh_safe_dummy, LEN_DUMMY_BH_CHAIN, args.nr_ind_bh, tramp_br, tramp_victim->jit_mem->call_entry);
 }
 
 void free_test_bh_chains()
