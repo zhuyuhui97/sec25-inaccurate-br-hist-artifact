@@ -54,8 +54,8 @@ static struct argp argp = {options, parse_opt, NULL, NULL, argp_child_test};
 void parse_args(int argc, char **argv)
 {
     args.nr_for_bh = 0;
-    args.nr_cond_bh = COND_FP_BITS;
-    args.nr_ind_bh = BHB_LEN_IB;
+    args.nr_cond_bh = 0;
+    args.nr_ind_bh = 0;
     args.nr_evset = 0;
     args.victim_snippet_base = 0;
     args.tramp_bits = 12; // 4096 bytes
