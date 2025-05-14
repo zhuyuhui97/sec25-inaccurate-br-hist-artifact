@@ -92,6 +92,14 @@ run_obj_t run = {
     .tests = {&test_chimera},
 };
 
+uint64_t test_continue = true;
+bool next_run()
+{
+    bool ret = test_continue;
+    test_continue &= false;
+    return ret;
+}
+
 void victim_snippet(uint64_t *offsets, uint64_t idx, char** argv, void **ib_ptr_p, char *frbuf, uint8_t *secret_p)
 {
     register uint64_t frbuf_offset = 0;
@@ -102,7 +110,7 @@ void victim_snippet(uint64_t *offsets, uint64_t idx, char** argv, void **ib_ptr_
     _a=*(uint64_t*)_a;
     _b=*(uint64_t*)_b;
     _d=*(uint64_t*)_d;
-    
+
     // PART 1 ==================
     if (_d==0)
     {
@@ -135,14 +143,6 @@ void victim_snippet(uint64_t *offsets, uint64_t idx, char** argv, void **ib_ptr_
         MEM_ACCESS(&frbuf[frbuf_offset]);
         NOP(8);
     }
-}
-
-uint64_t test_continue = true;
-bool next_run()
-{
-    bool ret = test_continue;
-    test_continue &= false;
-    return ret;
 }
 
 void init_test_bh_chains()
