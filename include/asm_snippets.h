@@ -33,14 +33,14 @@ typedef struct
 JIT_ALIGNED_SNIPPET_SYMBOLS(void, jit_br_and_inc_idx, uint64_t *offsets, uint64_t idx);
 JIT_ALIGNED_SNIPPET_SYMBOLS(void, jit_bcond_and_inc_idx, uint64_t *offsets, uint64_t idx);
 
-JIT_ALIGNED_SNIPPET_SYMBOLS(void, asm_bhs_br, uint64_t *offsets, uint64_t idx, char** argv, void **ib_ptr_p, void *frbuf, void *secret_p);
+JIT_ALIGNED_SNIPPET_SYMBOLS(void, asm_bhs_br, uint64_t *offsets, uint64_t idx, char** argv, void **ib_ptr_p, char *frbuf, void *secret_p);
 JIT_ALIGNED_SNIPPET_SYMBOLS(void, jit_bhs_evict, uint64_t *offsets, uint64_t idx, char** argv, void **ib_ptr_p);
-JIT_ALIGNED_SNIPPET_SYMBOLS(void, asm_br, uint64_t *offsets, uint64_t idx, char** argv, void **ib_ptr_p, void *frbuf, void *secret_p);
-JIT_ALIGNED_SNIPPET_SYMBOLS(void, jit_bcond_mispred, uint64_t *offsets, uint64_t idx, char** argv, void **ib_ptr_p, void *frbuf, void *secret_p);
+JIT_ALIGNED_SNIPPET_SYMBOLS(void, asm_br, uint64_t *offsets, uint64_t idx, char** argv, void **ib_ptr_p, char *frbuf, void *secret_p);
+JIT_ALIGNED_SNIPPET_SYMBOLS(void, jit_bcond_mispred, uint64_t *offsets, uint64_t idx, char** argv, void **ib_ptr_p, char *frbuf, void *secret_p);
 
 JIT_SNIPPET_SYMBOLS(void, jit_ret, void);
 JIT_SNIPPET_SYMBOLS(void, jit_nop, void);
 
-typedef void (*branch_chain_t)(uint64_t *offsets, uint64_t idx, char** argv, void **ib_ptr, void *frbuf, void *secret_p);
+typedef void (*branch_chain_t)(uint64_t *offsets, uint64_t idx, char** argv, void **ib_ptr, char *frbuf, void *secret_p);
 
 #endif
