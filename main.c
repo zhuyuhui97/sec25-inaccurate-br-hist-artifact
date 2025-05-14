@@ -15,13 +15,13 @@ __attribute__((aligned(4096)))
 uint64_t **res_cycles;
 uint64_t mem_threshold;
 
-void goto_chain(branch_chain_t br_chain, uint64_t *bh_targets, void **ib_ptr_p, int nr_cond_bh, void *frbuf, void *secret_p, uint64_t ex_argc, char **ex_argv)
+void goto_chain(branch_chain_t br_chain, uint64_t *bh_args, void **ib_ptr_p, int nr_cond_bh, void *frbuf, void *secret_p, uint64_t ex_argc, char **ex_argv)
 {
     // Populate BHB with conditional branches
     for (int i = 0; i < nr_cond_bh; i++)
         NOP(8);
     // Populate PHR with indirect branches and train_chains the BPU
-    br_chain(bh_targets, 0, ex_argv, ib_ptr_p, frbuf, secret_p);
+    br_chain(bh_args, 0, ex_argv, ib_ptr_p, frbuf, secret_p);
 }
 
 void do_spectre_test(test_obj_t test_specs, int idx_test)
@@ -47,13 +47,13 @@ void do_spectre_test(test_obj_t test_specs, int idx_test)
                 *ib_ptr_p = ib_target;
 
                 branch_chain_t bh_tramp = (*current->bh_tramp_p)->jit_mem->call_entry;
-                uint64_t *bh_targets = *(current->bh_targets_p);
-                uint64_t nr_cond_bh = *(current->nr_bh_cond_p);
+                uint64_t *bh_args = *(current->bh_args_p);
+                uint64_t nr_for_bh = *(current->nr_bh_for_p);
                 void *_frbuf = *(current->frbuf_p);
                 void *secret_p = current->secret_p;
                 uint64_t ex_argc = current->ex_argc;
                 char **ex_argv = current->ex_argv;
-                goto_chain(bh_tramp, bh_targets, ib_ptr_p, nr_cond_bh, _frbuf, secret_p, ex_argc, ex_argv);
+                goto_chain(bh_tramp, bh_args, ib_ptr_p, nr_for_bh, _frbuf, secret_p, ex_argc, ex_argv);
             }
         }
 
@@ -65,8 +65,8 @@ void do_spectre_test(test_obj_t test_specs, int idx_test)
 
         // Run the test_chain and see if we can see the desired mis-speculation
         branch_chain_t bh_tramp = (*test_chain->bh_tramp_p)->jit_mem->call_entry;
-        uint64_t *bh_targets = *(test_chain->bh_targets_p);
-        uint64_t nr_cond_bh = *(test_chain->nr_bh_cond_p);
+        uint64_t *bh_args = *(test_chain->bh_args_p);
+        uint64_t nr_for_bh = *(test_chain->nr_bh_for_p);
         char *_frbuf = *(test_chain->frbuf_p);
         char *secret_p = test_chain->secret_p;
         uint64_t ex_argc = test_chain->ex_argc;
@@ -79,7 +79,7 @@ void do_spectre_test(test_obj_t test_specs, int idx_test)
             FLUSH_DCACHE(SC_ENCODE_ADDR(_frbuf, test_specs.probes_p[i]));
         OPS_BARRIER(0x10);
 
-        goto_chain(bh_tramp, bh_targets, ib_ptr_p, nr_cond_bh, _frbuf, secret_p, ex_argc, ex_argv);
+        goto_chain(bh_tramp, bh_args, ib_ptr_p, nr_for_bh, _frbuf, secret_p, ex_argc, ex_argv);
         // Decode side channel to see if we have made it!
         OPS_BARRIER(0x10);
         for (int i = 0; i < test_specs.nr_probes; i++)
@@ -116,9 +116,10 @@ void init_res_buffers()
 
 void init_trampolines()
 {
-    tramp_ret = prep_trampoline(&jit_ret_obj, &jit_nop_obj, 16, 0, BASE_RET_MEM, 1ull<<args.tramp_bits);
-    tramp_br = prep_trampoline(&jit_br_and_inc_idx_obj, NULL, 0, 0, BASE_BHB_POPULATE, 1ull<<args.tramp_bits);
-    tramp_victim = prep_aligned_snippet(run.bp_snippet, (void *)args.victim_snippet_base, 24);
+    tramp_ret = prep_trampoline(&jit_ret_obj, &jit_nop_obj, NULL, 16, 0, BASE_RET_MEM, 1ull<<args.tramp_bits);
+    tramp_br = prep_trampoline(&jit_br_and_inc_idx_obj, NULL, NULL, 0, 0, BASE_BHB_POPULATE, 1ull<<args.tramp_bits);
+    tramp_bcond = prep_trampoline(&jit_bcond_and_inc_idx_obj, NULL, &jit_br_and_inc_idx_obj, 0, 0, NULL, args.nr_cond_bh *(jit_bcond_and_inc_idx_obj.end - jit_bcond_and_inc_idx_obj.entry));
+    tramp_victim = prep_aligned_snippet(run.bp_snippet, (void *)args.victim_snippet_base, 0);
 }
 
 void init_env()
@@ -165,6 +166,7 @@ void free_trampolines()
 {
     free_trampoline(tramp_ret);
     free_trampoline(tramp_br);
+    free_trampoline(tramp_bcond);
     free_trampoline(tramp_victim);
 }
 

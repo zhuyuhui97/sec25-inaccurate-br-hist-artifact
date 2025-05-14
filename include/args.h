@@ -4,6 +4,7 @@
 
 struct args_t
 {
+    unsigned long nr_for_bh; /* number of for-loop jumps */
     unsigned long nr_cond_bh; /* number of conditional branches */
     unsigned long nr_ind_bh;  /* number of indirect branches */
     unsigned long nr_evset;      /* number of evictions */

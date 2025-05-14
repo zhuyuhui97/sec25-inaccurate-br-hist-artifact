@@ -73,7 +73,7 @@ trampoline_obj_t *tramp_br_victim = NULL;
 static bh_chain_params_t chain_leak = {
     .bh_tramp_p = &tramp_br,
     .ib_target = &t_leak,
-    .bh_targets_p = &targets_bh_train,
+    .bh_args_p = &targets_bh_train,
     .nr_bh_cond_p = &args.nr_cond_bh,
     .nr_bh_ind_p = &args.nr_ind_bh,
     .ib_ptr_p = &ib_ptr,
@@ -83,7 +83,7 @@ static bh_chain_params_t chain_leak = {
 static bh_chain_params_t chain_safe = {
     .bh_tramp_p = &tramp_br,
     .ib_target = &t_empty,
-    .bh_targets_p = &targets_bh_victim,
+    .bh_args_p = &targets_bh_victim,
     .nr_bh_cond_p = &args.nr_cond_bh,
     .nr_bh_ind_p = &args.nr_ind_bh,
     .ib_ptr_p = &ib_ptr,
@@ -231,7 +231,7 @@ void free_test_bh_chains()
     tramp_br_victim = NULL;
 }
 
-void walk_evset() {}
+void mistrain() {}
 
 void init_test_evset()
 {

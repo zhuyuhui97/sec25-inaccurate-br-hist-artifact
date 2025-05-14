@@ -46,6 +46,17 @@ SNIPPET_ALIGN jit_br_and_inc_idx
     nop
 SNIPPET_END jit_br_and_inc_idx
 
+SNIPPET_DECLARE jit_bcond_and_inc_idx
+    // load BCOND flag from the array (uint64_t[])
+    ldr x7, [x0, x1, lsl #3]
+    // increase iteration index
+    add x1, x1, #1
+    cmp x7, #0
+SNIPPET_ALIGN jit_bcond_and_inc_idx
+    b.ne #4
+    padding_nop 4
+SNIPPET_END jit_bcond_and_inc_idx
+
 SNIPPET_DECLARE asm_br
     mov x0, x4
     mov x1, x5
@@ -77,3 +88,19 @@ SNIPPET_ALIGN jit_bhs_evict
     padding_nop 64
     ret
 SNIPPET_END jit_bhs_evict
+
+SNIPPET_DECLARE jit_bcond_mispred
+    ldr x7, [x2]
+    ldr x8, [x7]
+    cmp x8, #0
+SNIPPET_ALIGN jit_bcond_mispred
+    b.ne jit_bcond_mispred_target
+    ldrb w5, [x5]
+    lsl w5, w5, #8
+    sxtw x5, w5
+    add x5, x5, x4
+    ldrb w5, [x5]
+    padding_nop 32
+jit_bcond_mispred_target:
+    ret
+SNIPPET_END jit_bcond_mispred

@@ -5,6 +5,7 @@
 #include "tests.h"
 static struct argp_option options[] =
 {
+    {"for-bh",    'f',    "NR_JMPS",     0,      "Number of for-loop conditional branches populating the BHB."},
     {"cond-bh",    'c',    "NR_JMPS",     0,      "Number of conditional branches populating the BHB."},
     {"ind-bh",    'i',    "NR_JMPS",     0,      "Number of indirect branches populating the BHB."},
     {"evset-size",    'e',    "NR_BYTES",     0,      "Size of BTB eviction set."},
@@ -20,6 +21,9 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
     struct args_t *arguments = state->input;
     switch (key)
     {
+        case 'f':
+            arguments->nr_for_bh = strtoul(arg, NULL, 0);
+            break;
         case 'c':
             arguments->nr_cond_bh = strtoul(arg, NULL, 0);
             break;
@@ -49,9 +53,10 @@ static struct argp argp = {options, parse_opt, NULL, NULL, argp_child_test};
 
 void parse_args(int argc, char **argv)
 {
+    args.nr_for_bh = 0;
     args.nr_cond_bh = COND_FP_BITS;
     args.nr_ind_bh = BHB_LEN_IB;
-    args.nr_evset = SZ_BTB_EVSET;
+    args.nr_evset = 0;
     args.victim_snippet_base = 0;
     args.tramp_bits = 12; // 4096 bytes
     argp_parse(&argp, argc, argv, 0, 0, &args);

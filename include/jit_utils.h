@@ -30,6 +30,7 @@ enum ALLOC_METHOD
 typedef struct
 {
     uint64_t mem_size;
+    uint64_t exec_size;
     void *mem_addr;
     void *call_entry;
     enum ALLOC_METHOD alloc_method;
@@ -42,13 +43,15 @@ typedef struct
     uint64_t offset;
     snippet_obj_t *jump_snippet;
     snippet_obj_t *padding_snippet;
+    snippet_obj_t *tail_snippet;
     jit_mem_obj_t *jit_mem;
 } trampoline_obj_t;
 
 typedef struct {
     trampoline_obj_t **bh_tramp_p;
     void *ib_target;
-    uint64_t **bh_targets_p;
+    uint64_t **bh_args_p;
+    uint64_t *nr_bh_for_p;
     uint64_t *nr_bh_cond_p;
     uint64_t *nr_bh_ind_p;
     void **ib_ptr_p;
@@ -82,15 +85,16 @@ typedef struct {
 extern trampoline_obj_t *tramp_ret;
 extern trampoline_obj_t *tramp_br;
 extern trampoline_obj_t *tramp_victim;
+extern trampoline_obj_t *tramp_bcond;
 extern uint8_t cacheline_mem[0x1000];
 #define IBPTR ((void*)(&cacheline_mem[0x140]))
 
 // In main.c
 void goto_chain(branch_chain_t br_chain, uint64_t *bh_targets, void **ib_ptr_p, int nr_cond_bh, void *frbuf, void *secret_p, uint64_t ex_argc, char **ex_argv);
 
-jit_mem_obj_t *reg_jit_mem(void* entry, void* addr, uint64_t size, enum ALLOC_METHOD method);
+jit_mem_obj_t *reg_jit_mem(void* entry, void* addr, uint64_t mem_size,  uint64_t exec_size, enum ALLOC_METHOD method);
 void free_jit_mem(jit_mem_obj_t *obj);
-trampoline_obj_t* prep_trampoline(snippet_obj_t *jump, snippet_obj_t *padding, int jump_interval, int offset, register void *req_base_addr, uint64_t mem_size);
+trampoline_obj_t* prep_trampoline(snippet_obj_t *jump, snippet_obj_t *padding, snippet_obj_t *tail, int jump_interval, int offset, register void *req_base_addr, uint64_t mem_size);
 void free_trampoline(trampoline_obj_t *obj);
 
 uint64_t *prep_jmp_targets(uint64_t *offsets, int len, trampoline_obj_t *trampoline);

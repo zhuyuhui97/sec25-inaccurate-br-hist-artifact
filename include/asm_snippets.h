@@ -31,10 +31,12 @@ typedef struct
     JIT_SNIPPET_OBJ(x, (void*)&x, (void*)&__##x##_align, (void*)&__##x##_end)
 
 JIT_ALIGNED_SNIPPET_SYMBOLS(void, jit_br_and_inc_idx, uint64_t *offsets, uint64_t idx);
-// TODO: fix argument list
-JIT_ALIGNED_SNIPPET_SYMBOLS(void, asm_bhs_br, uint64_t *offsets, uint64_t idx);
-JIT_ALIGNED_SNIPPET_SYMBOLS(void, jit_bhs_evict, uint64_t *offsets, uint64_t idx, uint64_t sth, void* jump);
-JIT_ALIGNED_SNIPPET_SYMBOLS(void, asm_br, uint64_t, uint64_t, uint64_t, uint64_t);
+JIT_ALIGNED_SNIPPET_SYMBOLS(void, jit_bcond_and_inc_idx, uint64_t *offsets, uint64_t idx);
+
+JIT_ALIGNED_SNIPPET_SYMBOLS(void, asm_bhs_br, uint64_t *offsets, uint64_t idx, char** argv, void **ib_ptr_p, void *frbuf, void *secret_p);
+JIT_ALIGNED_SNIPPET_SYMBOLS(void, jit_bhs_evict, uint64_t *offsets, uint64_t idx, char** argv, void **ib_ptr_p);
+JIT_ALIGNED_SNIPPET_SYMBOLS(void, asm_br, uint64_t *offsets, uint64_t idx, char** argv, void **ib_ptr_p, void *frbuf, void *secret_p);
+JIT_ALIGNED_SNIPPET_SYMBOLS(void, jit_bcond_mispred, uint64_t *offsets, uint64_t idx, char** argv, void **ib_ptr_p, void *frbuf, void *secret_p);
 
 JIT_SNIPPET_SYMBOLS(void, jit_ret, void);
 JIT_SNIPPET_SYMBOLS(void, jit_nop, void);

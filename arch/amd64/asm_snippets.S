@@ -25,7 +25,7 @@ SNIPPET_DECLARE jit_nop
 SNIPPET_END jit_nop
 
 SNIPPET_DECLARE jit_br_and_inc_idx
-    // load BR target from the offset array (uint32_t[])
+    // load BR target from the offset array (uint64_t[])
     mov (%rdi,%rsi,8), %r10
     // increase iteration index
     inc %rsi
@@ -33,8 +33,20 @@ SNIPPET_ALIGN jit_br_and_inc_idx
     // let's jump!
     jmp *%r10
     nop
-    padding_nop 5
+    padding_nop 4
 SNIPPET_END jit_br_and_inc_idx
+
+SNIPPET_DECLARE jit_bcond_and_inc_idx
+    // load BCOND flag from the array (uint64_t[])
+    mov (%rdi,%rsi,8), %r10
+    // increase iteration index
+    inc %rsi
+    cmp $0, %r10
+SNIPPET_ALIGN jit_bcond_and_inc_idx
+    jnz .+8
+    // padding_nop 0x13
+    padding_nop 0xc
+SNIPPET_END jit_bcond_and_inc_idx
 
 SNIPPET_DECLARE asm_br
     mov %r8, %rdi
@@ -46,6 +58,8 @@ SNIPPET_ALIGN asm_br
 SNIPPET_END asm_br
 
 SNIPPET_DECLARE asm_bhs_br
+    mfence
+    padding_nop 8
     mov (%rdx), %r10
     mov (%r10), %r11
     cmp $0, %r11
@@ -60,12 +74,32 @@ asm_bhs_br_jg_target:
 SNIPPET_END asm_bhs_br
 
 SNIPPET_DECLARE jit_bhs_evict
-    mov (%rcx), %r10
-    mov (%rcx), %r10
-    cmp $0, %r10
+    mfence
+    padding_nop 8
+    mov (%rdx), %r10
+    mov (%r10), %r11
+    cmp $0, %r11
 SNIPPET_ALIGN jit_bhs_evict
     jg jit_bhs_evict_target
-    padding_nop 32
+    padding_nop 8
 jit_bhs_evict_target:
+    padding_nop 0x40
     ret
 SNIPPET_END jit_bhs_evict
+
+SNIPPET_DECLARE jit_bcond_mispred
+    mfence
+    padding_nop 8
+    mov (%rdx), %r10
+    mov (%r10), %r11
+    cmp $0, %r11
+SNIPPET_ALIGN jit_bcond_mispred
+    jg jit_bcond_mispred_target
+    mov (%r9), %r9b
+    movzb %r9b, %r9
+    shl $0x8, %r9
+    mov (%r8, %r9), %r10b
+    padding_nop 0x40
+jit_bcond_mispred_target:
+    ret
+SNIPPET_END jit_bcond_mispred
