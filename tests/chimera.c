@@ -5,21 +5,21 @@ char dummy_secret_invalid = 0;
 
 __attribute__((aligned(4096))) uint64_t arg_array[32*SIZE_CACHE_STRIDE];
 
-static uint64_t *argv_chimera_train0[4] = {
+static uint64_t *argv_train_p2[4] = {
     &arg_array[2*SIZE_CACHE_STRIDE], 
     &arg_array[3*SIZE_CACHE_STRIDE], 
     &arg_array[4*SIZE_CACHE_STRIDE], 
     &arg_array[5*SIZE_CACHE_STRIDE]
 };
 
-static uint64_t *argv_chimera_train1[4] = {
+static uint64_t *argv_train_p1[4] = {
     &arg_array[12*SIZE_CACHE_STRIDE], 
     &arg_array[13*SIZE_CACHE_STRIDE], 
     &arg_array[14*SIZE_CACHE_STRIDE], 
     &arg_array[15*SIZE_CACHE_STRIDE]
 };
 
-static uint64_t *argv_chimera_leak[4] = {
+static uint64_t *argv_test[4] = {
     &arg_array[22*SIZE_CACHE_STRIDE], 
     &arg_array[23*SIZE_CACHE_STRIDE], 
     &arg_array[24*SIZE_CACHE_STRIDE], 
@@ -29,7 +29,7 @@ static uint64_t *argv_chimera_leak[4] = {
 static void *bhs_dc_flush[1] = {&arg_array[22*SIZE_CACHE_STRIDE]};
 struct argp_child argp_child_test[] = {0};
 
-static bh_chain_params_t chain_bhs_safe = {
+static bh_chain_params_t chain_train_p2 = {
     .bh_tramp_p = &tramp_bcond,
     .ib_target = &t_alt,
     .bh_args_p = &bh_args,
@@ -40,11 +40,10 @@ static bh_chain_params_t chain_bhs_safe = {
     .frbuf_p = &frbuf,
     .secret_p = DUMMY_SECRET_P,
     .ex_argc = 1,
-    .ex_argv = (char **)&argv_chimera_train0
-    // .ex_argv = (char **)&argv_bcond_nt
+    .ex_argv = (char **)&argv_train_p2
 };
 
-static bh_chain_params_t chain_bhs_leak = {
+static bh_chain_params_t chain_train_p1 = {
     .bh_tramp_p = &tramp_bcond,
     .ib_target = &t_leak,
     .bh_args_p = &bh_args,
@@ -55,11 +54,10 @@ static bh_chain_params_t chain_bhs_leak = {
     .frbuf_p = &frbuf,
     .secret_p = DUMMY_SECRET_P,
     .ex_argc = 1,
-    .ex_argv = (char **)&argv_chimera_train1
-    // .ex_argv = (char **)&argv_bcond_tt
+    .ex_argv = (char **)&argv_train_p1
 };
 
-static bh_chain_params_t chain_bhs_test = {
+static bh_chain_params_t chain_test = {
     .bh_tramp_p = &tramp_bcond,
     .ib_target = &t_empty,
     .bh_args_p = &bh_args,
@@ -70,16 +68,15 @@ static bh_chain_params_t chain_bhs_test = {
     .frbuf_p = &frbuf,
     .secret_p = DUMMY_SECRET_P,
     .ex_argc = 1,
-    // .ex_argv = (char **)&argv_bcond_tt
-    .ex_argv = (char **)&argv_chimera_leak
+    .ex_argv = (char **)&argv_test
 };
 
-test_obj_t test_spec_bhs = {
+test_obj_t test_chimera = {
     .nr_repeat = NR_TEST_ITER,
     .nr_train_passes = 4,
     .nr_train_chains = 2,
-    .train_chains = (bh_chain_params_t *[]){&chain_bhs_safe, &chain_bhs_leak},
-    .test_chain = &chain_bhs_test,
+    .train_chains = (bh_chain_params_t *[]){&chain_train_p2, &chain_train_p1},
+    .test_chain = &chain_test,
     .nr_dc_flush = 1,
     .dc_flush = (void **)bhs_dc_flush,
     .before_train = &t_empty,
@@ -92,7 +89,7 @@ test_obj_t test_spec_bhs = {
 run_obj_t run = {
     .nr_tests = 1,
     .bp_snippet = &asm_bhs_br_obj,
-    .tests = {&test_spec_bhs},
+    .tests = {&test_chimera},
 };
 
 void victim_snippet(uint64_t *offsets, uint64_t idx, char** argv, void **ib_ptr_p, char *frbuf, uint8_t *secret_p)
@@ -106,6 +103,7 @@ void victim_snippet(uint64_t *offsets, uint64_t idx, char** argv, void **ib_ptr_
     _b=*(uint64_t*)_b;
     _d=*(uint64_t*)_d;
     
+    // PART 1 ==================
     if (_d==0)
     {
         if (_a==0)
@@ -120,6 +118,7 @@ void victim_snippet(uint64_t *offsets, uint64_t idx, char** argv, void **ib_ptr_
         }
         NOP(8);
         if (_c==0)
+    // PART 2 ==================
         {
             NOP(8);
         }
@@ -148,20 +147,24 @@ bool next_run()
 
 void init_test_bh_chains()
 {
-    *argv_chimera_train0[0] = 1;
-    *argv_chimera_train0[1] = 0;
-    *argv_chimera_train0[2] = 0;
-    *argv_chimera_train0[3] = 1;
+    // For training part 2
+    *argv_train_p2[0] = 1;
+    *argv_train_p2[1] = 0;
+    *argv_train_p2[2] = 0;
+    *argv_train_p2[3] = 1;
 
-    *argv_chimera_train1[0] = 0;
-    *argv_chimera_train1[1] = 1;
-    *argv_chimera_train1[2] = 0;
-    *argv_chimera_train1[3] = 0;
+    // For training part 1
+    *argv_train_p1[0] = 0;
+    *argv_train_p1[1] = 1;
+    *argv_train_p1[2] = 0;
+    *argv_train_p1[3] = 0;
 
-    *argv_chimera_leak[0] = 0;
-    *argv_chimera_leak[1] = 0;
-    *argv_chimera_leak[2] = 1;
-    *argv_chimera_leak[3] = 0;
+    // For testing
+    *argv_test[0] = 0;
+    *argv_test[1] = 0;
+    *argv_test[2] = 1;
+    *argv_test[3] = 0;
+
     bh_args = malloc((args.nr_cond_bh + 1) * sizeof(uint64_t));
     for (int i = 0; i < (args.nr_cond_bh + 1); i++)
         bh_args[i] = i%2;
