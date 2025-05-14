@@ -17,10 +17,10 @@ uint64_t mem_threshold;
 
 void goto_chain(branch_chain_t br_chain, uint64_t *bh_args, void **ib_ptr_p, int nr_cond_bh, void *frbuf, void *secret_p, uint64_t ex_argc, char **ex_argv)
 {
-    // Populate BHB with conditional branches
+    // Populate BHB with for loop
     for (int i = 0; i < nr_cond_bh; i++)
         NOP(8);
-    // Populate PHR with indirect branches and train_chains the BPU
+    // Populate PHR with direct/indirect branches and train the BPU
     br_chain(bh_args, 0, ex_argv, ib_ptr_p, frbuf, secret_p);
 }
 

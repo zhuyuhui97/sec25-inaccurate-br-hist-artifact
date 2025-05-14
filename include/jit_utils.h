@@ -105,14 +105,14 @@ trampoline_obj_t* prep_aligned_snippet(snippet_obj_t *jump, void *target, uint64
  * The history of conditional branches seems to be XOR'd to path history when updating or querying IB prediction.
  * Add an extra for-loop to keep it constant when CPU reaches BLR_pred.
 */
-void inline __attribute__((always_inline)) populate_cbhb(int n)
-{
-    NOP_PADDING(64);
-    for (register int j = 0; j < n; j++)
-    {
-        NOP_PADDING(64);
-    }
-    NOP_PADDING(64);
-}
+// void inline __attribute__((always_inline)) populate_cbhb(int n)
+// {
+//     NOP_PADDING(64);
+//     for (register int j = 0; j < n; j++)
+//     {
+//         NOP_PADDING(64);
+//     }
+//     NOP_PADDING(64);
+// }
 
 #endif

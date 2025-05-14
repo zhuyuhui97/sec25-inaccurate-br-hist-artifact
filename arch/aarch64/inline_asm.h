@@ -1,5 +1,6 @@
 #ifndef __INLINE_ASM_H__
 #define __INLINE_ASM_H__
+#include "jit_utils.h"
 
 #define FLUSH_DCACHE(p) asm volatile("dc civac, %0" ::"r"(p));
 #define FLUSH_ICACHE(p) asm volatile("ic ivau, %0\n dc civac, %0" ::"r"(p))
