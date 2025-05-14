@@ -27,6 +27,8 @@
 uint64_t start=0, len=0, pass=1;
 char *dump_filename = NULL;
 uint64_t frbuf_threshold = 0;
+uint64_t nr_bh = 512;
+uint64_t sz_bcond_offset = 2;
 
 static struct argp_option options[] =
 {
@@ -35,6 +37,8 @@ static struct argp_option options[] =
     {"pass",    'p',    "N",            0,      "Passes of leaking the given memory range"},
     {"output",  'o',    "FILE",         0,      "Dump filename"},
     {"threshold", 't',  "THRESHOLD",    0,      "Threshold for F+R probes"},
+    {"nr_bh",    'b',    "N",           0,      "Number of branch hints"},
+    {"sz_bcond", 's',   "N",            0,      "Size of branch condition offset"},
     { 0 }
 };
 
@@ -56,6 +60,12 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state)
             break;
         case 't':
             frbuf_threshold = (uint64_t)strtol(arg, NULL, 0);
+            break;
+        case 'b':
+            nr_bh = (uint64_t)strtol(arg, NULL, 0);
+            break;
+        case 's':
+            sz_bcond_offset = (uint64_t)strtol(arg, NULL, 0);
             break;
         case ARGP_KEY_ARG:
             break;
@@ -304,7 +314,7 @@ int main(int argc, char *argv[], char *envp[])
 
     setup_prog_reload();
     // setup_prog_dbg_load();
-    setup_prog_victim();
+    setup_prog_victim(nr_bh, sz_bcond_offset);
 
     test_frbuf();
 

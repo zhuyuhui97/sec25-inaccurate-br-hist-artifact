@@ -54,7 +54,7 @@ extern void *ptr_mmap_evset, *ptr_mmap_bh_params, *ptr_mmap_jmptable, *ptr_mmap_
 extern uint32_t *ptr_mmap_time;
 
 void setup_prog_reload();
-void setup_prog_victim();
+void setup_prog_victim(int nr_bh, int sz_bcond_offset);
 
 void setup_prog_dbg_load();
 

