@@ -11,15 +11,15 @@
 #include "asm_snippets.h"
 #include "inline_asm.h"
 
-#define NR_TEST_ITER 64
-#define BASE_BTB_EVICT      VOIDPTR(0x6000000)
-#define BASE_BHB_POPULATE   VOIDPTR(0x7000000)
-#define BASE_RET_MEM        VOIDPTR(0xf00000)
-
 #define MACRO_TO_STR(x) #x
 #define VOIDPTR(x) (void*)(x)
 #define JMP_TO(x) ((void (*)())(x))()
 #define MEM_ACCESS(p) *(volatile unsigned char *)p
+
+#define NR_TEST_ITER 64
+#define BASE_BTB_EVICT      VOIDPTR(0x6000000)
+#define BASE_BHB_POPULATE   VOIDPTR(0x7000000)
+#define BASE_RET_MEM        VOIDPTR(0xf00000)
 
 enum ALLOC_METHOD
 {
