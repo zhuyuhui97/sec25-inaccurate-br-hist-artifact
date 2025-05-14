@@ -24,11 +24,13 @@ static uint64_t *argv_bcond_nt[1] = {&bhs_bcond_nt};
 static void *bhs_dc_flush[2] = {&bhs_bcond_tt, &bhs_bcond_nt};
 uint64_t mistrain_align = 24;
 uint64_t mistrain_passes = 1;
+bool mistrain_taken = false;
 
 struct argp_option options[] = 
 {
     {"mistrain-align", 0x1000, "NR_BITS", 0, "Align of mistraining snippet addresses in bits"},
     {"mistrain-passes", 0x1001, "NR_PASSES", 0, "Number of mistraining passes"},
+    {"mistrain-taken", 0x1002, 0, 0, "Mistrain with taken branches"},
     {0}
 };
 
@@ -42,6 +44,9 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
         break;
     case 0x1001:
         mistrain_passes = strtoul(arg, NULL, 0);
+        break;
+    case 0x1002:
+        mistrain_taken = true;
         break;
     default:
         return ARGP_ERR_UNKNOWN;
@@ -104,8 +109,8 @@ static bh_chain_params_t chain_bhs_test = {
 test_obj_t test_spec_bhs = {
     .nr_repeat = NR_TEST_ITER,
     .nr_train_passes = 4,
-    .nr_train_chains = 2,
-    .train_chains = (bh_chain_params_t *[]){&chain_bhs_leak, &chain_bhs_safe},
+    .nr_train_chains = 4,
+    .train_chains = (bh_chain_params_t *[]){&chain_bhs_leak, &chain_bhs_safe, &chain_bhs_safe, &chain_bhs_safe},
     .test_chain = &chain_bhs_test,
     .nr_dc_flush = 2,
     .dc_flush = (void **)&bhs_dc_flush,
@@ -119,8 +124,8 @@ test_obj_t test_spec_bhs = {
 test_obj_t test_pht_mistrain = {
     .nr_repeat = NR_TEST_ITER,
     .nr_train_passes = 4,
-    .nr_train_chains = 2,
-    .train_chains = (bh_chain_params_t *[]){ &chain_bhs_safe, &chain_bhs_leak},
+    .nr_train_chains = 4,
+    .train_chains = (bh_chain_params_t *[]){ &chain_bhs_safe, &chain_bhs_leak, &chain_bhs_leak, &chain_bhs_leak},
     .test_chain = &chain_bhs_test,
     .nr_dc_flush = 2,
     .dc_flush = (void **)&bhs_dc_flush,
@@ -165,22 +170,26 @@ void mistrain()
     for (int i = 0; i < args.nr_evset; i++)
     for (int j = 0; j < mistrain_passes; j++)
     {
-        // intel
-        // goto_chain(tramp_bcond->jit_mem->call_entry, bh_args_mistrain[i], &ib_ptr_empty, args.nr_for_bh, frbuf, DUMMY_SECRET_P, 1, (char**)argv_bcond_nt);
-        // amd
+        #if defined(zen4) || defined(rpi5)
         goto_chain(tramp_bcond->jit_mem->call_entry, bh_args_mistrain[i], &ib_ptr_empty, args.nr_for_bh, frbuf, DUMMY_SECRET_P, 1, (char**)argv_bcond_tt);
         goto_chain(tramp_bcond->jit_mem->call_entry, bh_args_mistrain[i], &ib_ptr_empty, args.nr_for_bh, frbuf, DUMMY_SECRET_P, 1, (char**)argv_bcond_nt);
         goto_chain(tramp_bcond->jit_mem->call_entry, bh_args_mistrain[i], &ib_ptr_empty, args.nr_for_bh, frbuf, DUMMY_SECRET_P, 1, (char**)argv_bcond_tt);
         goto_chain(tramp_bcond->jit_mem->call_entry, bh_args_mistrain[i], &ib_ptr_empty, args.nr_for_bh, frbuf, DUMMY_SECRET_P, 1, (char**)argv_bcond_nt);
-        // goto_chain(tramp_bcond->jit_mem->call_entry, bh_args_mistrain[i], &ib_ptr_empty, args.nr_for_bh, frbuf, DUMMY_SECRET_P, 1, (char**)argv_bcond_tt);
-        // goto_chain(tramp_bcond->jit_mem->call_entry, bh_args_mistrain[i], &ib_ptr_empty, args.nr_for_bh, frbuf, DUMMY_SECRET_P, 1, (char**)argv_bcond_tt);
-        // goto_chain(tramp_bcond->jit_mem->call_entry, bh_args_mistrain[i], &ib_ptr_empty, args.nr_for_bh, frbuf, DUMMY_SECRET_P, 1, (char**)argv_bcond_tt);
-        // goto_chain(tramp_bcond->jit_mem->call_entry, bh_args_mistrain[i], &ib_ptr_empty, args.nr_for_bh, frbuf, DUMMY_SECRET_P, 1, (char**)argv_bcond_tt);
-        // amd mistrain
-        goto_chain(tramp_bcond->jit_mem->call_entry, bh_args_mistrain[i], &ib_ptr_empty, args.nr_for_bh, frbuf, DUMMY_SECRET_P, 1, (char**)argv_bcond_nt);
-        goto_chain(tramp_bcond->jit_mem->call_entry, bh_args_mistrain[i], &ib_ptr_empty, args.nr_for_bh, frbuf, DUMMY_SECRET_P, 1, (char**)argv_bcond_nt);
-        goto_chain(tramp_bcond->jit_mem->call_entry, bh_args_mistrain[i], &ib_ptr_empty, args.nr_for_bh, frbuf, DUMMY_SECRET_P, 1, (char**)argv_bcond_nt);
-        goto_chain(tramp_bcond->jit_mem->call_entry, bh_args_mistrain[i], &ib_ptr_empty, args.nr_for_bh, frbuf, DUMMY_SECRET_P, 1, (char**)argv_bcond_nt);
+        #endif
+        if (mistrain_taken)
+        {
+            goto_chain(tramp_bcond->jit_mem->call_entry, bh_args_mistrain[i], &ib_ptr_empty, args.nr_for_bh, frbuf, DUMMY_SECRET_P, 1, (char**)argv_bcond_tt);
+            goto_chain(tramp_bcond->jit_mem->call_entry, bh_args_mistrain[i], &ib_ptr_empty, args.nr_for_bh, frbuf, DUMMY_SECRET_P, 1, (char**)argv_bcond_tt);
+            goto_chain(tramp_bcond->jit_mem->call_entry, bh_args_mistrain[i], &ib_ptr_empty, args.nr_for_bh, frbuf, DUMMY_SECRET_P, 1, (char**)argv_bcond_tt);
+            goto_chain(tramp_bcond->jit_mem->call_entry, bh_args_mistrain[i], &ib_ptr_empty, args.nr_for_bh, frbuf, DUMMY_SECRET_P, 1, (char**)argv_bcond_tt);
+        }
+        else
+        {
+            goto_chain(tramp_bcond->jit_mem->call_entry, bh_args_mistrain[i], &ib_ptr_empty, args.nr_for_bh, frbuf, DUMMY_SECRET_P, 1, (char**)argv_bcond_nt);
+            goto_chain(tramp_bcond->jit_mem->call_entry, bh_args_mistrain[i], &ib_ptr_empty, args.nr_for_bh, frbuf, DUMMY_SECRET_P, 1, (char**)argv_bcond_nt);
+            goto_chain(tramp_bcond->jit_mem->call_entry, bh_args_mistrain[i], &ib_ptr_empty, args.nr_for_bh, frbuf, DUMMY_SECRET_P, 1, (char**)argv_bcond_nt);
+            goto_chain(tramp_bcond->jit_mem->call_entry, bh_args_mistrain[i], &ib_ptr_empty, args.nr_for_bh, frbuf, DUMMY_SECRET_P, 1, (char**)argv_bcond_nt);
+        }
     }
     OPS_BARRIER(0x10);
 }

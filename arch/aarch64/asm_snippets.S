@@ -80,11 +80,11 @@ SNIPPET_ALIGN asm_bhs_br
 SNIPPET_END asm_bhs_br
 
 SNIPPET_DECLARE jit_bhs_evict
-    nop
-    ldr x7, [x3]
-    cmp x7, #0
+    ldr x7, [x2]
+    ldr x8, [x7]
+    cmp x8, #0
 SNIPPET_ALIGN jit_bhs_evict
-    b.ne #32
+    b.gt #32
     padding_nop 64
     ret
 SNIPPET_END jit_bhs_evict

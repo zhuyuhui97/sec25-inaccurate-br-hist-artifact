@@ -114,7 +114,7 @@ test_obj_t test_pht_evict = {
     .nr_repeat = NR_TEST_ITER,
     .nr_train_passes = 2,
     .nr_train_chains = 4,
-    .train_chains = (bh_chain_params_t *[]){ &chain_bhs_safe, &chain_bhs_leak, &chain_bhs_safe, &chain_bhs_safe},
+    .train_chains = (bh_chain_params_t *[]){ &chain_bhs_leak, &chain_bhs_safe, &chain_bhs_safe, &chain_bhs_safe},
     .test_chain = &chain_bhs_test,
     .nr_dc_flush = 2,
     .dc_flush = (void **)&bhs_dc_flush,
@@ -161,11 +161,12 @@ void mistrain()
     for (int i = 0; i < args.nr_evset; i++)
     for (int j = 0; j < mistrain_passes; j++)
     {
-        // AMD pattern: tt nt tt nt tt tt
+        #if defined(zen4) || defined(rpi5)
         goto_chain(tramp_bcond->jit_mem->call_entry, bh_args_mistrain[i], &ib_ptr_empty, args.nr_for_bh, frbuf, DUMMY_SECRET_P, 1, (char**)argv_bcond_tt);
         goto_chain(tramp_bcond->jit_mem->call_entry, bh_args_mistrain[i], &ib_ptr_empty, args.nr_for_bh, frbuf, DUMMY_SECRET_P, 1, (char**)argv_bcond_nt);
         goto_chain(tramp_bcond->jit_mem->call_entry, bh_args_mistrain[i], &ib_ptr_empty, args.nr_for_bh, frbuf, DUMMY_SECRET_P, 1, (char**)argv_bcond_tt);
         goto_chain(tramp_bcond->jit_mem->call_entry, bh_args_mistrain[i], &ib_ptr_empty, args.nr_for_bh, frbuf, DUMMY_SECRET_P, 1, (char**)argv_bcond_nt);
+        #endif
         if (mistrain_taken)
         {
             goto_chain(tramp_bcond->jit_mem->call_entry, bh_args_mistrain[i], &ib_ptr_empty, args.nr_for_bh, frbuf, DUMMY_SECRET_P, 1, (char**)argv_bcond_tt);
