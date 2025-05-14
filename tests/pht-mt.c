@@ -162,23 +162,23 @@ void mistrain()
     for (int j = 0; j < mistrain_passes; j++)
     {
         // AMD pattern: tt nt tt nt tt tt
-        goto_chain(tramp_bcond->jit_mem->call_entry, bh_args_mistrain[i], &ib_ptr_empty, COND_FP_BITS, frbuf, DUMMY_SECRET_P, 1, (char**)argv_bcond_tt);
-        // goto_chain(tramp_bcond->jit_mem->call_entry, bh_args_mistrain[i], &ib_ptr_empty, COND_FP_BITS, frbuf, DUMMY_SECRET_P, 1, (char**)argv_bcond_nt);
-        // goto_chain(tramp_bcond->jit_mem->call_entry, bh_args_mistrain[i], &ib_ptr_empty, COND_FP_BITS, frbuf, DUMMY_SECRET_P, 1, (char**)argv_bcond_tt);
-        // goto_chain(tramp_bcond->jit_mem->call_entry, bh_args_mistrain[i], &ib_ptr_empty, COND_FP_BITS, frbuf, DUMMY_SECRET_P, 1, (char**)argv_bcond_nt);
+        goto_chain(tramp_bcond->jit_mem->call_entry, bh_args_mistrain[i], &ib_ptr_empty, args.nr_for_bh, frbuf, DUMMY_SECRET_P, 1, (char**)argv_bcond_tt);
+        goto_chain(tramp_bcond->jit_mem->call_entry, bh_args_mistrain[i], &ib_ptr_empty, args.nr_for_bh, frbuf, DUMMY_SECRET_P, 1, (char**)argv_bcond_nt);
+        goto_chain(tramp_bcond->jit_mem->call_entry, bh_args_mistrain[i], &ib_ptr_empty, args.nr_for_bh, frbuf, DUMMY_SECRET_P, 1, (char**)argv_bcond_tt);
+        goto_chain(tramp_bcond->jit_mem->call_entry, bh_args_mistrain[i], &ib_ptr_empty, args.nr_for_bh, frbuf, DUMMY_SECRET_P, 1, (char**)argv_bcond_nt);
         if (mistrain_taken)
         {
-            goto_chain(tramp_bcond->jit_mem->call_entry, bh_args_mistrain[i], &ib_ptr_empty, COND_FP_BITS, frbuf, DUMMY_SECRET_P, 1, (char**)argv_bcond_tt);
-            goto_chain(tramp_bcond->jit_mem->call_entry, bh_args_mistrain[i], &ib_ptr_empty, COND_FP_BITS, frbuf, DUMMY_SECRET_P, 1, (char**)argv_bcond_tt);
-            goto_chain(tramp_bcond->jit_mem->call_entry, bh_args_mistrain[i], &ib_ptr_empty, COND_FP_BITS, frbuf, DUMMY_SECRET_P, 1, (char**)argv_bcond_tt);
-            goto_chain(tramp_bcond->jit_mem->call_entry, bh_args_mistrain[i], &ib_ptr_empty, COND_FP_BITS, frbuf, DUMMY_SECRET_P, 1, (char**)argv_bcond_tt);
+            goto_chain(tramp_bcond->jit_mem->call_entry, bh_args_mistrain[i], &ib_ptr_empty, args.nr_for_bh, frbuf, DUMMY_SECRET_P, 1, (char**)argv_bcond_tt);
+            goto_chain(tramp_bcond->jit_mem->call_entry, bh_args_mistrain[i], &ib_ptr_empty, args.nr_for_bh, frbuf, DUMMY_SECRET_P, 1, (char**)argv_bcond_tt);
+            goto_chain(tramp_bcond->jit_mem->call_entry, bh_args_mistrain[i], &ib_ptr_empty, args.nr_for_bh, frbuf, DUMMY_SECRET_P, 1, (char**)argv_bcond_tt);
+            goto_chain(tramp_bcond->jit_mem->call_entry, bh_args_mistrain[i], &ib_ptr_empty, args.nr_for_bh, frbuf, DUMMY_SECRET_P, 1, (char**)argv_bcond_tt);
         }
         else
         {
-            goto_chain(tramp_bcond->jit_mem->call_entry, bh_args_mistrain[i], &ib_ptr_empty, COND_FP_BITS, frbuf, DUMMY_SECRET_P, 1, (char**)argv_bcond_nt);
-            goto_chain(tramp_bcond->jit_mem->call_entry, bh_args_mistrain[i], &ib_ptr_empty, COND_FP_BITS, frbuf, DUMMY_SECRET_P, 1, (char**)argv_bcond_nt);
-            goto_chain(tramp_bcond->jit_mem->call_entry, bh_args_mistrain[i], &ib_ptr_empty, COND_FP_BITS, frbuf, DUMMY_SECRET_P, 1, (char**)argv_bcond_nt);
-            goto_chain(tramp_bcond->jit_mem->call_entry, bh_args_mistrain[i], &ib_ptr_empty, COND_FP_BITS, frbuf, DUMMY_SECRET_P, 1, (char**)argv_bcond_nt);
+            goto_chain(tramp_bcond->jit_mem->call_entry, bh_args_mistrain[i], &ib_ptr_empty, args.nr_for_bh, frbuf, DUMMY_SECRET_P, 1, (char**)argv_bcond_nt);
+            goto_chain(tramp_bcond->jit_mem->call_entry, bh_args_mistrain[i], &ib_ptr_empty, args.nr_for_bh, frbuf, DUMMY_SECRET_P, 1, (char**)argv_bcond_nt);
+            goto_chain(tramp_bcond->jit_mem->call_entry, bh_args_mistrain[i], &ib_ptr_empty, args.nr_for_bh, frbuf, DUMMY_SECRET_P, 1, (char**)argv_bcond_nt);
+            goto_chain(tramp_bcond->jit_mem->call_entry, bh_args_mistrain[i], &ib_ptr_empty, args.nr_for_bh, frbuf, DUMMY_SECRET_P, 1, (char**)argv_bcond_nt);
         }
 
         
@@ -193,8 +193,8 @@ void init_test_evset()
     for (int i = 0; i < args.nr_evset; i++)
     // int i = 0;
     {
-        tramp_btb_bh_evset[i] = prep_aligned_snippet(&jit_bhs_evict_obj, (void *)args.victim_snippet_base, mistrain_align+i);
-        // tramp_btb_bh_evset[i] = prep_aligned_snippet(&jit_bhs_evict_obj, (void *)args.victim_snippet_base, mistrain_align);
+        // tramp_btb_bh_evset[i] = prep_aligned_snippet(&jit_bhs_evict_obj, (void *)args.victim_snippet_base, mistrain_align+i);
+        tramp_btb_bh_evset[i] = prep_aligned_snippet(&jit_bhs_evict_obj, (void *)args.victim_snippet_base, mistrain_align);
         // printf("%llx ", tramp_btb_bh_evset[i]->jit_mem->call_entry);
     }
     // printf("\n");
