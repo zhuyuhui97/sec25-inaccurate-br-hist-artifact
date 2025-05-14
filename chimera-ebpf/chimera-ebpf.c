@@ -282,7 +282,6 @@ int main(int argc, char *argv[], char *envp[])
         return 1;
     }
     env_page_sz = getpagesize();
-    // start &= ~(16-1);
 
     printf("Page size: %d\n", env_page_sz);
     printf("Start: %lx, Len: %d, Pass: %d\n", start, len, pass);
@@ -310,10 +309,7 @@ int main(int argc, char *argv[], char *envp[])
     param_rsh =          (uint64_t *)(ptr_mmap_bh_params + PARAM_OFFSET_RSH);
     dummy_load =         (uint64_t *)(ptr_mmap_dummy + PR_OFFSET_1);
 
-    // memset(ptr_mmap_secret, 0b11011010, 32);
-
     setup_prog_reload();
-    // setup_prog_dbg_load();
     setup_prog_victim(nr_bh, sz_bcond_offset);
 
     test_frbuf();
