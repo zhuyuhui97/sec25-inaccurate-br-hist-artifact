@@ -78,8 +78,8 @@ static bh_chain_params_t chain_bhs_test = {
 test_obj_t test_spec_bhs = {
     .nr_repeat = NR_TEST_ITER,
     .nr_train_passes = 2,
-    .nr_train_chains = 2,
-    .train_chains = (bh_chain_params_t *[]){&chain_bhs_leak, &chain_bhs_safe},
+    .nr_train_chains = 3,
+    .train_chains = (bh_chain_params_t *[]){&chain_bhs_leak, &chain_bhs_safe, &chain_bhs_safe},
     .test_chain = &chain_bhs_test,
     .nr_dc_flush = 0,
     .dc_flush = NULL,
@@ -93,8 +93,8 @@ test_obj_t test_spec_bhs = {
 test_obj_t test_pht_mistrain = {
     .nr_repeat = NR_TEST_ITER,
     .nr_train_passes = 2,
-    .nr_train_chains = 2,
-    .train_chains = (bh_chain_params_t *[]){ &chain_bhs_safe, &chain_bhs_leak},
+    .nr_train_chains = 3,
+    .train_chains = (bh_chain_params_t *[]){ &chain_bhs_safe, &chain_bhs_leak, &chain_bhs_leak},
     .test_chain = &chain_bhs_test,
     .nr_dc_flush = 0,
     .dc_flush = NULL,
@@ -157,8 +157,8 @@ void init_test_bh_chains()
         bh_cond_args[1] = malloc(args.nr_cond_bh * sizeof(uint64_t));
 
         for (int i = 0; i < args.nr_cond_bh; i++) bh_cond_args[0][i] = i % 2 - 1;
-        for (int i = 0; i < args.nr_cond_bh; i++) bh_cond_args[0][i] = i % 2 ;
-        // for (int i = 0; i < args.nr_cond_bh; i++) bh_cond_args[1][i] = i % 2;
+        // for (int i = 0; i < args.nr_cond_bh; i++) bh_cond_args[0][i] = i % 2 ;
+        for (int i = 0; i < args.nr_cond_bh; i++) bh_cond_args[1][i] = i % 2;
 
         uint64_t args_start_offset = bh_ind_first ? nr_ind_args : 0;
         memcpy(&bh_args[0][args_start_offset], &bh_cond_args[0][0], args.nr_cond_bh * sizeof(uint64_t));
