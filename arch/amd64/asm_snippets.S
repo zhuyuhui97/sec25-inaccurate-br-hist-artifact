@@ -73,6 +73,10 @@ asm_bhs_br_jg_target:
     jmp *%r10
 SNIPPET_END asm_bhs_br
 
+/**
+ * Note:
+ * - On zen4, eviction branches successfully trigger SLS only when jumping across 4k boundary.
+ */
 SNIPPET_DECLARE jit_bhs_evict
     mfence
     padding_nop 8
@@ -82,6 +86,7 @@ SNIPPET_DECLARE jit_bhs_evict
 SNIPPET_ALIGN jit_bhs_evict
     jg jit_bhs_evict_target
     padding_nop 8
+    // padding_nop 0x2000 // for eviction on zen4
 jit_bhs_evict_target:
     padding_nop 0x40
     ret
