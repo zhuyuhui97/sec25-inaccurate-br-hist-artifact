@@ -91,11 +91,14 @@ static bh_chain_params_t chain_bhs_test = {
     .ex_argv = NULL
 };
 
+/**
+ * BUG: A76 iBTB updates when trained with new results for at least 3 times?
+ */
 test_obj_t test_spec_bhs = {
     .nr_repeat = NR_TEST_ITER,
     .nr_train_passes = 4,
-    .nr_train_chains = 3,
-    .train_chains = (bh_chain_params_t *[]){&chain_bhs_leak, &chain_bhs_safe, &chain_bhs_safe},
+    .nr_train_chains = 4,
+    .train_chains = (bh_chain_params_t *[]){&chain_bhs_leak, &chain_bhs_safe, &chain_bhs_safe, &chain_bhs_safe},
     .test_chain = &chain_bhs_test,
     .nr_dc_flush = 0,
     .dc_flush = NULL,
@@ -109,8 +112,8 @@ test_obj_t test_spec_bhs = {
 test_obj_t test_pht_mistrain = {
     .nr_repeat = NR_TEST_ITER,
     .nr_train_passes = 4,
-    .nr_train_chains = 3,
-    .train_chains = (bh_chain_params_t *[]){ &chain_bhs_safe, &chain_bhs_leak, &chain_bhs_leak},
+    .nr_train_chains = 4,
+    .train_chains = (bh_chain_params_t *[]){&chain_bhs_safe, &chain_bhs_leak, &chain_bhs_leak, &chain_bhs_leak},
     .test_chain = &chain_bhs_test,
     .nr_dc_flush = 0,
     .dc_flush = NULL,
