@@ -107,9 +107,9 @@ void free_test_bh_chains()
 void mistrain()
 {
     OPS_BARRIER(0x10);
-    void *ib_ptr_empty = &t_leak;
+    void *ib_ptr_tmp = &t_leak;
     for (int i = 0; i < args.nr_evset; i++)
-        goto_chain(tramp_br->jit_mem->call_entry, targets_btb_bh_evset[i], &ib_ptr_empty, COND_FP_BITS, frbuf, DUMMY_SECRET_P, 1, (char**)argv_bhs_leak);
+        goto_chain(tramp_br->jit_mem->call_entry, targets_btb_bh_evset[i], &ib_ptr_tmp, args.nr_for_bh, frbuf, DUMMY_SECRET_P, 1, (char**)argv_bhs_leak);
     OPS_BARRIER(0x10);
 }
 
