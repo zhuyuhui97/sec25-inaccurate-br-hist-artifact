@@ -7,9 +7,8 @@
 #include <stdbool.h>
 #include <sys/mman.h>
 #include <string.h>
-#include "targets.h"
+#include "arch_defines.h"
 #include "asm_snippets.h"
-#include "inline_asm.h"
 #include "c_snippets.h"
 
 #define NR_TEST_ITER 64

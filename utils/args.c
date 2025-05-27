@@ -1,7 +1,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include "args.h"
-#include "targets.h"
+#include "arch_defines.h"
 #include "tests.h"
 static struct argp_option options[] =
 {

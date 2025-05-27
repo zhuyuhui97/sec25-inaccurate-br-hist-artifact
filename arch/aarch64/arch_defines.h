@@ -13,5 +13,13 @@
             asm volatile("dsb sy");\
             asm volatile("isb");\
             NOP(x);
+
+#define OPCODE_ADDR_ALIGN           2
+#define OPCODE_SIZE                 (1 << OPCODE_ADDR_ALIGN)
+#define OPCODE_ADDR_MASK            (~(OPCODE_SIZE - 1))
+
+#define OPCODE_SIZE_NOP             OPCODE_SIZE
+#define OPCODE_SIZE_RET             OPCODE_SIZE
+#define SIZE_CACHE_STRIDE           256
             
 #endif

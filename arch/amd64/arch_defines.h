@@ -12,4 +12,10 @@
             asm volatile("mfence");\
             NOP(x);
 
+#define OPCODE_SIZE_NOP             1
+#define OPCODE_SIZE_RET             1
+#define SIZE_CACHE_STRIDE           256
+// SHOULD BE REMOVED
+#define OPCODE_SIZE                 16
+
 #endif

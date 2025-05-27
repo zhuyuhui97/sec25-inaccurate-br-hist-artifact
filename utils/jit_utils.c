@@ -2,7 +2,7 @@
 #include <unistd.h>
 #include <assert.h>
 #include "jit_utils.h"
-#include "targets.h"
+#include "arch_defines.h"
 
 __attribute__((aligned(0x1000)))
 uint8_t cacheline_mem[0x1000] = {0};

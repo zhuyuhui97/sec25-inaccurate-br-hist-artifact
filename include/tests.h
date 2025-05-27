@@ -4,8 +4,7 @@
 #include "jit_utils.h"
 #include "c_snippets.h"
 #include "sc_utils.h"
-#include "inline_asm.h"
-#include "targets.h"
+#include "arch_defines.h"
 #include "args.h"
 
 bool next_run();

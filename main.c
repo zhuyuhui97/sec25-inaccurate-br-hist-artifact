@@ -2,7 +2,7 @@
 #include "jit_utils.h"
 #include "c_snippets.h"
 #include "sc_utils.h"
-#include "inline_asm.h"
+#include "arch_defines.h"
 #include "tests.h"
 #include "args.h"
 
