@@ -24,6 +24,14 @@ void goto_chain(branch_chain_t br_chain, uint64_t *bh_args, void **ib_ptr_p, int
     br_chain(bh_args, 0, ex_argv, ib_ptr_p, frbuf, secret_p);
 }
 
+#define UNPACK_BR_CHAIN_ARGS(x) \
+    branch_chain_t bh_tramp = (*x->bh_tramp_p)->jit_mem->call_entry; \
+    uint64_t *bh_args = *(x->bh_args_p); \
+    uint64_t nr_for_bh = *(x->nr_bh_for_p); \
+    char *_frbuf = *(x->frbuf_p); \
+    char *secret_p = x->secret_p; \
+    uint64_t ex_argc = x->ex_argc; \
+    char **ex_argv = x->ex_argv; 
 void do_spectre_test(test_obj_t test_specs, int idx_test)
 {
     uint64_t nr_repeat = test_specs.nr_repeat;
@@ -45,14 +53,8 @@ void do_spectre_test(test_obj_t test_specs, int idx_test)
                 void **ib_ptr_p = current->ib_ptr_p;
                 void *ib_target = current->ib_target;
                 *ib_ptr_p = ib_target;
-
-                branch_chain_t bh_tramp = (*current->bh_tramp_p)->jit_mem->call_entry;
-                uint64_t *bh_args = *(current->bh_args_p);
-                uint64_t nr_for_bh = *(current->nr_bh_for_p);
-                void *_frbuf = *(current->frbuf_p);
-                void *secret_p = current->secret_p;
-                uint64_t ex_argc = current->ex_argc;
-                char **ex_argv = current->ex_argv;
+                
+                UNPACK_BR_CHAIN_ARGS(current);
                 goto_chain(bh_tramp, bh_args, ib_ptr_p, nr_for_bh, _frbuf, secret_p, ex_argc, ex_argv);
             }
         }
@@ -64,13 +66,7 @@ void do_spectre_test(test_obj_t test_specs, int idx_test)
         *ib_ptr_p = ib_target;
 
         // Run the test_chain and see if we can see the desired mis-speculation
-        branch_chain_t bh_tramp = (*test_chain->bh_tramp_p)->jit_mem->call_entry;
-        uint64_t *bh_args = *(test_chain->bh_args_p);
-        uint64_t nr_for_bh = *(test_chain->nr_bh_for_p);
-        char *_frbuf = *(test_chain->frbuf_p);
-        char *secret_p = test_chain->secret_p;
-        uint64_t ex_argc = test_chain->ex_argc;
-        char **ex_argv = test_chain->ex_argv;
+        UNPACK_BR_CHAIN_ARGS(test_chain);
 
         FLUSH_DCACHE(ib_ptr_p);
         for (int i = 0; i < test_specs.nr_dc_flush; i++)
