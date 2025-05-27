@@ -17,7 +17,7 @@
 #define __EBPF_PROGS_H__
 
 #include "ebpf_helper.h"
-#include "targets.h"
+#include "arch_defines.h"
 
 #define PARAM_OFFSET_SET_PTR    (0 * SIZE_CACHE_STRIDE)
 #define PARAM_OFFSET_ESC        (1 * SIZE_CACHE_STRIDE)

