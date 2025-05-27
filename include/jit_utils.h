@@ -71,6 +71,7 @@ typedef struct {
     void **dc_flush;
     void (*before_train)(void);
     void (*before_test)(void);
+    void (*post_test)(void);
     uint64_t nr_probes;
     char **probes_p;
     char *description;
