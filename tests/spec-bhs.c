@@ -138,7 +138,7 @@ struct argp_child argp_child_test[] =
     {0}
 };
 
-static bh_chain_params_t chain_bhs_safe = {
+static bh_chain_params_t chain_bhs_train_tt = {
     .bh_tramp_p = &tramp_bcond,
     .ib_target = IB_T_ALT,
     .bh_args_p = &bh_args,
@@ -153,7 +153,7 @@ static bh_chain_params_t chain_bhs_safe = {
     // .ex_argv = (char **)&argv_bcond_nt
 };
 
-static bh_chain_params_t chain_bhs_leak = {
+static bh_chain_params_t chain_bhs_train_nt = {
     .bh_tramp_p = &tramp_bcond,
     .ib_target = IB_T_LEAK,
     .bh_args_p = &bh_args,
@@ -168,7 +168,7 @@ static bh_chain_params_t chain_bhs_leak = {
     // .ex_argv = (char **)&argv_bcond_tt
 };
 
-static bh_chain_params_t chain_bhs_test = {
+static bh_chain_params_t chain_bhs_test_tt = {
     .bh_tramp_p = &tramp_bcond,
     .ib_target = IB_T_EMPTY,
     .bh_args_p = &bh_args,
@@ -197,12 +197,12 @@ static bh_chain_params_t chain_bhs_test_nt = {
     .ex_argv = (char **)&argv_bcond_nt
 };
 
-test_obj_t test_spec_bhs = {
+test_obj_t train_tt_test_tt = {
     .nr_repeat = NR_TEST_ITER,
     .nr_train_passes = 4,
     .nr_train_chains = 4,
-    .train_chains = (bh_chain_params_t *[]){&chain_bhs_leak, &chain_bhs_safe, &chain_bhs_safe, &chain_bhs_safe},
-    .test_chain = &chain_bhs_test,
+    .train_chains = (bh_chain_params_t *[]){&chain_bhs_train_nt, &chain_bhs_train_tt, &chain_bhs_train_tt, &chain_bhs_train_tt},
+    .test_chain = &chain_bhs_test_tt,
     .nr_dc_flush = 2,
     .dc_flush = (void **)&bhs_dc_flush,
     .before_train = &t_empty,
@@ -212,15 +212,15 @@ test_obj_t test_spec_bhs = {
 #endif
     .nr_probes = 2,
     .probes_p = (char *[]){DUMMY_SECRET_P, DUMMY_SECRET_ALT_P},
-    .description = "Train with {leak,safe} and test with safe"
+    .description = "Train Bc_prime biased to TT and test with TT"
 };
 
-test_obj_t test_pht_mistrain = {
+test_obj_t train_nt_test_tt = {
     .nr_repeat = NR_TEST_ITER,
     .nr_train_passes = 4,
     .nr_train_chains = 4,
-    .train_chains = (bh_chain_params_t *[]){&chain_bhs_safe, &chain_bhs_leak, &chain_bhs_leak, &chain_bhs_leak},
-    .test_chain = &chain_bhs_test,
+    .train_chains = (bh_chain_params_t *[]){&chain_bhs_train_tt, &chain_bhs_train_nt, &chain_bhs_train_nt, &chain_bhs_train_nt},
+    .test_chain = &chain_bhs_test_tt,
     .nr_dc_flush = 2,
     .dc_flush = (void **)&bhs_dc_flush,
     .before_train = &t_empty,
@@ -230,14 +230,14 @@ test_obj_t test_pht_mistrain = {
 #endif
     .nr_probes = 2,
     .probes_p = (char *[]){DUMMY_SECRET_P, DUMMY_SECRET_ALT_P},
-    .description = "Train with {safe,leak} and test with safe"
+    .description = "Train Bc_prime biased to NT and test with TT"
 };
 
-test_obj_t test_nt_nt = {
+test_obj_t train_nt_test_nt = {
     .nr_repeat = NR_TEST_ITER,
     .nr_train_passes = 4,
     .nr_train_chains = 4,
-    .train_chains = (bh_chain_params_t *[]){&chain_bhs_safe, &chain_bhs_leak, &chain_bhs_leak, &chain_bhs_leak},
+    .train_chains = (bh_chain_params_t *[]){&chain_bhs_train_tt, &chain_bhs_train_nt, &chain_bhs_train_nt, &chain_bhs_train_nt},
     .test_chain = &chain_bhs_test_nt,
     .nr_dc_flush = 2,
     .dc_flush = (void **)&bhs_dc_flush,
@@ -248,14 +248,14 @@ test_obj_t test_nt_nt = {
 #endif
     .nr_probes = 2,
     .probes_p = (char *[]){DUMMY_SECRET_P, DUMMY_SECRET_ALT_P},
-    .description = "Train biased to NT and test with NT"
+    .description = "Train Bc_prime biased to NT and test with NT"
 };
 
-test_obj_t test_tt_nt = {
+test_obj_t train_tt_test_nt = {
     .nr_repeat = NR_TEST_ITER,
     .nr_train_passes = 4,
     .nr_train_chains = 4,
-    .train_chains = (bh_chain_params_t *[]){&chain_bhs_leak, &chain_bhs_safe, &chain_bhs_safe, &chain_bhs_safe},
+    .train_chains = (bh_chain_params_t *[]){&chain_bhs_train_nt, &chain_bhs_train_tt, &chain_bhs_train_tt, &chain_bhs_train_tt},
     .test_chain = &chain_bhs_test_nt,
     .nr_dc_flush = 2,
     .dc_flush = (void **)&bhs_dc_flush,
@@ -266,13 +266,13 @@ test_obj_t test_tt_nt = {
 #endif
     .nr_probes = 2,
     .probes_p = (char *[]){DUMMY_SECRET_P, DUMMY_SECRET_ALT_P},
-    .description = "Train biased to TT and test with NT"
+    .description = "Train Bc_prime biased to TT and test with NT"
 };
 
 run_obj_t run = {
     .nr_tests = 4,
     .bp_snippet = VICTIM_SNIPPET_OBJ,
-    .tests = {&test_spec_bhs, &test_pht_mistrain, &test_tt_nt, &test_nt_nt},
+    .tests = {&train_tt_test_tt, &train_nt_test_tt, &train_tt_test_nt, &train_nt_test_nt},
 };
 
 uint64_t test_continue = true;
