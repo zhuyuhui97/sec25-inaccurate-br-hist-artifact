@@ -33,6 +33,9 @@ SNIPPET_ALIGN asm_bhs_br_measure_lat
     padding_nop 32
     mov x0, x4
     mov x1, x5
+#ifdef DBG_ARCH_BH
+    ops_barrier 8
+#endif
     GET_JMP_LAT_PRE_JMP
     ldr x7, [x3]
     br x7
