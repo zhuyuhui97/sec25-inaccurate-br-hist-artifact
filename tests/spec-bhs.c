@@ -8,6 +8,83 @@
  */
 
 #include "tests.h"
+#include "spec-bhs.h"
+#include "jit_utils.h"
+
+#if defined DBG_JMP_LATENCY
+#define IB_T_LEAK           &t_leak_latency
+#define IB_T_ALT            &t_alt_latency
+#define IB_T_EMPTY          &t_empty_latency
+#define VICTIM_SNIPPET_OBJ  &asm_bhs_br_measure_lat_obj
+#define EVICT_SNIPPET_OBJ   &jit_bhs_evict_measure_lat_obj
+JIT_ALIGNED_SNIPPET_SYMBOLS(void, asm_bhs_br_measure_lat, uint64_t *offsets, uint64_t idx, char** argv, void **ib_ptr_p, char *frbuf, void *secret_p);
+JIT_ALIGNED_SNIPPET_SYMBOLS(void, jit_bhs_evict_measure_lat, uint64_t *offsets, uint64_t idx, char** argv, void **ib_ptr_p);
+
+register uint64_t global_reg_br_lat asm(GLOBAL_REG_BR_LAT_C);
+uint64_t **res_jmp_lat;
+uint64_t res_jmp_lat_cnt = 0;
+uint64_t idx_test=0, idx_iter=0;
+
+void t_leak_latency(register char *frbuf, register uint8_t *secret_ptr)
+{
+    GET_JMP_LAT_POST_JMP();
+    MEM_ACCESS(SC_ENCODE_ADDR(frbuf, secret_ptr));
+    NOP(32);
+}
+
+void t_alt_latency(register char *frbuf)
+{
+    GET_JMP_LAT_POST_JMP();
+    MEM_ACCESS(SC_ENCODE_ADDR(frbuf, &dummy_secrets[1]));
+}
+
+void t_empty_latency()
+{
+    GET_JMP_LAT_POST_JMP();
+    NOP(32);
+}
+
+void init_jmp_lat()
+{
+    res_jmp_lat = malloc(run.nr_tests * sizeof(uint64_t *));
+    for (int i = 0; i < run.nr_tests; i++)
+        res_jmp_lat[i] = malloc(run.tests[i]->nr_repeat * sizeof(uint64_t));
+}
+
+void get_jmp_lat()
+{
+    if (idx_iter == run.tests[idx_test]->nr_repeat)
+    {
+        idx_iter = 0;
+        idx_test++;
+    }
+    res_jmp_lat[idx_test][idx_iter] = global_reg_br_lat;
+    idx_iter++;
+}
+
+void print_jmp_lat()
+{
+    for (int i = 0; i < run.nr_tests; i++)
+    {
+        printf("--- Test %d: %s\n", i, run.tests[i]->description);
+        printf("Branch latency (average of %d tests): ", run.tests[i]->nr_repeat);
+        uint64_t sum = 0;
+        for (int j = 0; j < run.tests[i]->nr_repeat; j++)
+        {
+            sum += res_jmp_lat[i][j];
+        }
+        printf("%lu ", sum / run.tests[i]->nr_repeat);
+        printf("\n");
+    }
+}
+
+#else
+#define IB_T_LEAK           &t_leak
+#define IB_T_ALT            &t_alt
+#define IB_T_EMPTY          &t_empty
+#define VICTIM_SNIPPET_OBJ  &asm_bhs_br_obj
+#define EVICT_SNIPPET_OBJ   &jit_bhs_evict_obj
+#endif
 
 void mistrain();
 
@@ -63,7 +140,7 @@ struct argp_child argp_child_test[] =
 
 static bh_chain_params_t chain_bhs_safe = {
     .bh_tramp_p = &tramp_bcond,
-    .ib_target = &t_alt,
+    .ib_target = IB_T_ALT,
     .bh_args_p = &bh_args,
     .nr_bh_cond_p = &args.nr_cond_bh,
     .nr_bh_ind_p = &args.nr_ind_bh,
@@ -78,7 +155,7 @@ static bh_chain_params_t chain_bhs_safe = {
 
 static bh_chain_params_t chain_bhs_leak = {
     .bh_tramp_p = &tramp_bcond,
-    .ib_target = &t_leak,
+    .ib_target = IB_T_LEAK,
     .bh_args_p = &bh_args,
     .nr_bh_cond_p = &args.nr_cond_bh,
     .nr_bh_ind_p = &args.nr_ind_bh,
@@ -93,7 +170,7 @@ static bh_chain_params_t chain_bhs_leak = {
 
 static bh_chain_params_t chain_bhs_test = {
     .bh_tramp_p = &tramp_bcond,
-    .ib_target = &t_empty,
+    .ib_target = IB_T_EMPTY,
     .bh_args_p = &bh_args,
     .nr_bh_cond_p = &args.nr_cond_bh,
     .nr_bh_ind_p = &args.nr_ind_bh,
@@ -106,6 +183,20 @@ static bh_chain_params_t chain_bhs_test = {
     // .ex_argv = (char **)&argv_bcond_nt
 };
 
+static bh_chain_params_t chain_bhs_test_nt = {
+    .bh_tramp_p = &tramp_bcond,
+    .ib_target = IB_T_EMPTY,
+    .bh_args_p = &bh_args,
+    .nr_bh_cond_p = &args.nr_cond_bh,
+    .nr_bh_ind_p = &args.nr_ind_bh,
+    .nr_bh_for_p = &args.nr_for_bh,
+    .ib_ptr_p = IBPTR,
+    .frbuf_p = &frbuf,
+    .secret_p = DUMMY_SECRET_P,
+    .ex_argc = 1,
+    .ex_argv = (char **)&argv_bcond_nt
+};
+
 test_obj_t test_spec_bhs = {
     .nr_repeat = NR_TEST_ITER,
     .nr_train_passes = 4,
@@ -116,6 +207,9 @@ test_obj_t test_spec_bhs = {
     .dc_flush = (void **)&bhs_dc_flush,
     .before_train = &t_empty,
     .before_test = &mistrain,
+#ifdef DBG_JMP_LATENCY
+    .post_test = &get_jmp_lat,
+#endif
     .nr_probes = 2,
     .probes_p = (char *[]){DUMMY_SECRET_P, DUMMY_SECRET_ALT_P},
     .description = "Train with {leak,safe} and test with safe"
@@ -125,21 +219,60 @@ test_obj_t test_pht_mistrain = {
     .nr_repeat = NR_TEST_ITER,
     .nr_train_passes = 4,
     .nr_train_chains = 4,
-    .train_chains = (bh_chain_params_t *[]){ &chain_bhs_safe, &chain_bhs_leak, &chain_bhs_leak, &chain_bhs_leak},
+    .train_chains = (bh_chain_params_t *[]){&chain_bhs_safe, &chain_bhs_leak, &chain_bhs_leak, &chain_bhs_leak},
     .test_chain = &chain_bhs_test,
     .nr_dc_flush = 2,
     .dc_flush = (void **)&bhs_dc_flush,
     .before_train = &t_empty,
     .before_test = &mistrain,
+#ifdef DBG_JMP_LATENCY
+    .post_test = &get_jmp_lat,
+#endif
     .nr_probes = 2,
     .probes_p = (char *[]){DUMMY_SECRET_P, DUMMY_SECRET_ALT_P},
     .description = "Train with {safe,leak} and test with safe"
 };
 
+test_obj_t test_nt_nt = {
+    .nr_repeat = NR_TEST_ITER,
+    .nr_train_passes = 4,
+    .nr_train_chains = 4,
+    .train_chains = (bh_chain_params_t *[]){&chain_bhs_safe, &chain_bhs_leak, &chain_bhs_leak, &chain_bhs_leak},
+    .test_chain = &chain_bhs_test_nt,
+    .nr_dc_flush = 2,
+    .dc_flush = (void **)&bhs_dc_flush,
+    .before_train = &t_empty,
+    .before_test = &mistrain,
+#ifdef DBG_JMP_LATENCY
+    .post_test = &get_jmp_lat,
+#endif
+    .nr_probes = 2,
+    .probes_p = (char *[]){DUMMY_SECRET_P, DUMMY_SECRET_ALT_P},
+    .description = "Train biased to NT and test with NT"
+};
+
+test_obj_t test_tt_nt = {
+    .nr_repeat = NR_TEST_ITER,
+    .nr_train_passes = 4,
+    .nr_train_chains = 4,
+    .train_chains = (bh_chain_params_t *[]){&chain_bhs_leak, &chain_bhs_safe, &chain_bhs_safe, &chain_bhs_safe},
+    .test_chain = &chain_bhs_test_nt,
+    .nr_dc_flush = 2,
+    .dc_flush = (void **)&bhs_dc_flush,
+    .before_train = &t_empty,
+    .before_test = &mistrain,
+#ifdef DBG_JMP_LATENCY
+    .post_test = &get_jmp_lat,
+#endif
+    .nr_probes = 2,
+    .probes_p = (char *[]){DUMMY_SECRET_P, DUMMY_SECRET_ALT_P},
+    .description = "Train biased to TT and test with NT"
+};
+
 run_obj_t run = {
-    .nr_tests = 2,
-    .bp_snippet = &asm_bhs_br_obj,
-    .tests = {&test_spec_bhs, &test_pht_mistrain},
+    .nr_tests = 4,
+    .bp_snippet = VICTIM_SNIPPET_OBJ,
+    .tests = {&test_spec_bhs, &test_pht_mistrain, &test_tt_nt, &test_nt_nt},
 };
 
 uint64_t test_continue = true;
@@ -199,7 +332,7 @@ void init_test_evset()
     tramp_btb_bh_evset = malloc(args.nr_evset * sizeof(trampoline_obj_t *));
     for (int i = 0; i < args.nr_evset; i++)
     {
-        tramp_btb_bh_evset[i] = prep_aligned_snippet(&jit_bhs_evict_obj, (void *)args.victim_snippet_base, mistrain_align);
+        tramp_btb_bh_evset[i] = prep_aligned_snippet(EVICT_SNIPPET_OBJ, (void *)args.victim_snippet_base, mistrain_align);
     }
     bh_args_mistrain = malloc(args.nr_evset * sizeof(uint64_t *));
     for (int i = 0; i < args.nr_evset; i++)
@@ -220,12 +353,21 @@ void free_test_evset()
 
 void init_test()
 {
+#ifdef DBG_JMP_LATENCY
+    init_jmp_lat();
+#endif
     init_test_bh_chains();
     init_test_evset();
 }
 
 void free_test()
 {
+#ifdef DBG_JMP_LATENCY
+    print_jmp_lat();
+    for (int i = 0; i < run.nr_tests; i++)
+        free(res_jmp_lat[i]);
+    free(res_jmp_lat);
+#endif
     free_test_bh_chains();
     free_test_evset();
 }
