@@ -1,14 +1,20 @@
 CC := $(CROSS_COMPILE)gcc
 
 DIR_ARCH_INCLUDE := arch/$(ARCH)/
-DIR_INCLUDE := include/ $(DIR_ARCH_INCLUDE)
+DIR_INCLUDE := include/ tests/ $(DIR_ARCH_INCLUDE)
 DIR_BUILD := build/
 
 EXFLAGS := -D$(TARGET) -DARCH_$(ARCH) $(addprefix -D,$(FLAGS))
 # CFLAGS += -static -O0 -g -pie $(addprefix -I,$(DIR_INCLUDE)) $(EXFLAGS)
 CFLAGS += -O0 -g -pie $(addprefix -I,$(DIR_INCLUDE)) $(EXFLAGS)
 
-$(DIR_BUILD)main: main.c tests/$(TEST).c $(DIR_BUILD)asm_snippets.o $(DIR_BUILD)jit_utils.o $(DIR_BUILD)c_snippets.o $(DIR_BUILD)sc_utils.o utils/args.c
+ifneq (,$(wildcard tests/$(TEST).$(ARCH).S))
+    TEST_SRC := tests/$(TEST).$(ARCH).S tests/$(TEST).c
+else
+    TEST_SRC := tests/$(TEST).c
+endif
+
+$(DIR_BUILD)main: main.c $(TEST_SRC) $(DIR_BUILD)asm_snippets.o $(DIR_BUILD)jit_utils.o $(DIR_BUILD)c_snippets.o $(DIR_BUILD)sc_utils.o utils/args.c
 	$(CC) $(CFLAGS) -o $@ $^
 
 $(DIR_BUILD)asm_snippets.o: $(DIR_ARCH_INCLUDE)asm_snippets.S include/asm_snippets.h include/asm_macros.S
