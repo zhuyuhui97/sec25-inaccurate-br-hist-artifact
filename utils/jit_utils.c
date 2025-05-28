@@ -162,8 +162,6 @@ trampoline_obj_t* prep_aligned_snippet(snippet_obj_t *src, void *anchor, uint64_
         page_request += (1 << nr_const_lsb);
         munmap(mem, mem_size);
     }
-    printf("mem=%p\n", mem);
-    printf("writeptr=%p\n", writeptr);
     memcpy(writeptr, (void*)entry, length);
     __clear_cache(writeptr, writeptr + length + OPCODE_SIZE);
 

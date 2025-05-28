@@ -197,14 +197,10 @@ void mistrain()
 void init_test_evset()
 {
     tramp_btb_bh_evset = malloc(args.nr_evset * sizeof(trampoline_obj_t *));
-    printf("%lx\n", tramp_victim->jit_mem->call_entry);
     for (int i = 0; i < args.nr_evset; i++)
     {
         tramp_btb_bh_evset[i] = prep_aligned_snippet(&jit_bhs_evict_obj, (void *)args.victim_snippet_base, mistrain_align);
-        // tramp_btb_bh_evset[i] = prep_aligned_snippet(&jit_bhs_evict_obj, (void *)args.victim_snippet_base, mistrain_align+i);
-        printf("%lx ", tramp_btb_bh_evset[i]->jit_mem->call_entry);
     }
-    printf("\n");
     bh_args_mistrain = malloc(args.nr_evset * sizeof(uint64_t *));
     for (int i = 0; i < args.nr_evset; i++)
     {
