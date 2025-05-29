@@ -42,6 +42,7 @@ void do_spectre_test(test_obj_t test_specs, int idx_test)
 
     for (int rept_test = 0; rept_test < nr_repeat; rept_test++)
     {
+        if (test_specs.pre_test) test_specs.pre_test();
         for (int rept_train = 0; rept_train < nr_train_passes; rept_train++)
         {
             // Warm-up the BPU
