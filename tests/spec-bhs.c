@@ -199,7 +199,6 @@ test_obj_t train_tt_test_tt = {
     .spec_chain = &chain_bhs_test_tt,
     .nr_dc_flush = 2,
     .dc_flush = (void **)&bhs_dc_flush,
-    .pre_train = &t_empty,
     .pre_spec = &mistrain,
 #ifdef DBG_JMP_LATENCY
     .post_spec = &get_jmp_lat,
@@ -217,7 +216,6 @@ test_obj_t train_nt_test_tt = {
     .spec_chain = &chain_bhs_test_tt,
     .nr_dc_flush = 2,
     .dc_flush = (void **)&bhs_dc_flush,
-    .pre_train = &t_empty,
     .pre_spec = &mistrain,
 #ifdef DBG_JMP_LATENCY
     .post_spec = &get_jmp_lat,
@@ -235,7 +233,6 @@ test_obj_t train_nt_test_nt = {
     .spec_chain = &chain_bhs_test_nt,
     .nr_dc_flush = 2,
     .dc_flush = (void **)&bhs_dc_flush,
-    .pre_train = &t_empty,
     .pre_spec = &mistrain,
 #ifdef DBG_JMP_LATENCY
     .post_spec = &get_jmp_lat,
@@ -253,7 +250,6 @@ test_obj_t train_tt_test_nt = {
     .spec_chain = &chain_bhs_test_nt,
     .nr_dc_flush = 2,
     .dc_flush = (void **)&bhs_dc_flush,
-    .pre_train = &t_empty,
     .pre_spec = &mistrain,
 #ifdef DBG_JMP_LATENCY
     .post_spec = &get_jmp_lat,
