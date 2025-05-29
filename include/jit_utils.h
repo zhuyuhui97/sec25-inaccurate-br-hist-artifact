@@ -61,12 +61,13 @@ typedef struct {
     uint64_t nr_train_passes;
     uint64_t nr_train_chains;
     bh_chain_params_t** train_chains;
-    bh_chain_params_t* test_chain;
+    bh_chain_params_t* spec_chain;
     uint64_t nr_dc_flush;
     void **dc_flush;
-    void (*before_train)(void);
-    void (*before_test)(void);
-    void (*post_test)(void);
+    void (*pre_test)(void);
+    void (*pre_train)(void);
+    void (*pre_spec)(void);
+    void (*post_spec)(void);
     uint64_t nr_probes;
     char **probes_p;
     char *description;

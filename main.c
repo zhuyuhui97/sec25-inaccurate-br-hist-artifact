@@ -38,18 +38,18 @@ void do_spectre_test(test_obj_t test_specs, int idx_test)
     uint64_t nr_train_passes = test_specs.nr_train_passes;
     uint64_t nr_train_chains = test_specs.nr_train_chains;
     bh_chain_params_t **train_chains = test_specs.train_chains;
-    bh_chain_params_t *test_chain = test_specs.test_chain;
+    bh_chain_params_t *spec_chain = test_specs.spec_chain;
 
-    for (int test_iter = 0; test_iter < nr_repeat; test_iter++)
+    for (int rept_test = 0; rept_test < nr_repeat; rept_test++)
     {
-        for (int train_iter = 0; train_iter < nr_train_passes; train_iter++)
+        for (int rept_train = 0; rept_train < nr_train_passes; rept_train++)
         {
             // Warm-up the BPU
-            if (test_specs.before_train) test_specs.before_train();
+            if (test_specs.pre_train) test_specs.pre_train();
             // Train the BPU with desired records
-            for (int train_flow = 0; train_flow < nr_train_chains; train_flow++)
+            for (int idx_train = 0; idx_train < nr_train_chains; idx_train++)
             {
-                bh_chain_params_t *current = train_chains[train_flow];
+                bh_chain_params_t *current = train_chains[idx_train];
                 void **ib_ptr_p = current->ib_ptr_p;
                 void *ib_target = current->ib_target;
                 *ib_ptr_p = ib_target;
@@ -60,13 +60,13 @@ void do_spectre_test(test_obj_t test_specs, int idx_test)
         }
 
         // Massage the BPU to a desired state
-        if (test_specs.before_test) test_specs.before_test();
-        void **ib_ptr_p = test_chain->ib_ptr_p;
-        void *ib_target = test_chain->ib_target;
+        if (test_specs.pre_spec) test_specs.pre_spec();
+        void **ib_ptr_p = spec_chain->ib_ptr_p;
+        void *ib_target = spec_chain->ib_target;
         *ib_ptr_p = ib_target;
 
-        // Run the test_chain and see if we can see the desired mis-speculation
-        UNPACK_BR_CHAIN_ARGS(test_chain);
+        // Run the spec_chain and see if we can see the desired mis-speculation
+        UNPACK_BR_CHAIN_ARGS(spec_chain);
 
         FLUSH_DCACHE(ib_ptr_p);
         for (int i = 0; i < test_specs.nr_dc_flush; i++)
@@ -78,9 +78,9 @@ void do_spectre_test(test_obj_t test_specs, int idx_test)
         goto_chain(bh_tramp, bh_args, ib_ptr_p, nr_for_bh, _frbuf, secret_p, ex_argc, ex_argv);
         // Decode side channel to see if we have made it!
         OPS_BARRIER(0x10);
-        if (test_specs.post_test) test_specs.post_test();
+        if (test_specs.post_spec) test_specs.post_spec();
         for (int i = 0; i < test_specs.nr_probes; i++)
-            res_cycles[idx_test][test_iter * test_specs.nr_probes + i] = mem_access_time(SC_ENCODE_ADDR(_frbuf, test_specs.probes_p[i]));
+            res_cycles[idx_test][rept_test * test_specs.nr_probes + i] = mem_access_time(SC_ENCODE_ADDR(_frbuf, test_specs.probes_p[i]));
     }
 }
 
