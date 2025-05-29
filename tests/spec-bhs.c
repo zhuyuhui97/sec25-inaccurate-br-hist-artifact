@@ -51,15 +51,9 @@ void init_jmp_lat()
         res_jmp_lat[i] = malloc(run.tests[i]->nr_repeat * sizeof(uint64_t));
 }
 
-void get_jmp_lat()
+void get_jmp_lat(uint64_t idx_test, uint64_t rept_test)
 {
-    if (idx_iter == run.tests[idx_test]->nr_repeat)
-    {
-        idx_iter = 0;
-        idx_test++;
-    }
-    res_jmp_lat[idx_test][idx_iter] = global_reg_br_lat;
-    idx_iter++;
+    res_jmp_lat[idx_test][rept_test] = global_reg_br_lat;
 }
 
 void print_jmp_lat()

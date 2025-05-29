@@ -42,14 +42,15 @@ void do_spectre_test(test_obj_t test_specs, int idx_test)
 
     for (int rept_test = 0; rept_test < nr_repeat; rept_test++)
     {
-        if (test_specs.pre_test) test_specs.pre_test();
+        if (test_specs.pre_test) test_specs.pre_test(idx_test, rept_test);
         for (int rept_train = 0; rept_train < nr_train_passes; rept_train++)
         {
             // Warm-up the BPU
-            if (test_specs.pre_train) test_specs.pre_train();
+            if (test_specs.pre_train) test_specs.pre_train(idx_test, rept_test, rept_train);
             // Train the BPU with desired records
             for (int idx_train = 0; idx_train < nr_train_chains; idx_train++)
             {
+                if (test_specs.in_train) test_specs.in_train(idx_test, rept_test, rept_train, idx_train);
                 bh_chain_params_t *current = train_chains[idx_train];
                 void **ib_ptr_p = current->ib_ptr_p;
                 void *ib_target = current->ib_target;
@@ -61,7 +62,7 @@ void do_spectre_test(test_obj_t test_specs, int idx_test)
         }
 
         // Massage the BPU to a desired state
-        if (test_specs.pre_spec) test_specs.pre_spec();
+        if (test_specs.pre_spec) test_specs.pre_spec(idx_test, rept_test);
         void **ib_ptr_p = spec_chain->ib_ptr_p;
         void *ib_target = spec_chain->ib_target;
         *ib_ptr_p = ib_target;
@@ -79,7 +80,7 @@ void do_spectre_test(test_obj_t test_specs, int idx_test)
         goto_chain(bh_tramp, bh_args, ib_ptr_p, nr_for_bh, _frbuf, secret_p, ex_argc, ex_argv);
         // Decode side channel to see if we have made it!
         OPS_BARRIER(0x10);
-        if (test_specs.post_spec) test_specs.post_spec();
+        if (test_specs.post_spec) test_specs.post_spec(idx_test, rept_test);
         for (int i = 0; i < test_specs.nr_probes; i++)
             res_cycles[idx_test][rept_test * test_specs.nr_probes + i] = mem_access_time(SC_ENCODE_ADDR(_frbuf, test_specs.probes_p[i]));
     }

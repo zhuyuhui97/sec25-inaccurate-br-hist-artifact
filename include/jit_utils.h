@@ -56,6 +56,12 @@ typedef struct {
     char **ex_argv;
 } bh_chain_params_t;
 
+typedef void (cb_pre_test_t)(uint64_t idx_test, uint64_t idx_rept_test);
+typedef void (cb_pre_train_t)(uint64_t idx_test, uint64_t idx_rept_test, uint64_t idx_rept_train);
+typedef void (cb_in_train_t)(uint64_t idx_test, uint64_t idx_rept_test, uint64_t idx_rept_train, uint64_t idx_train);
+typedef void (cb_pre_spec_t)(uint64_t idx_test, uint64_t idx_rept_test);
+typedef void (cb_post_spec_t)(uint64_t idx_test, uint64_t idx_rept_test);
+
 typedef struct {
     uint64_t nr_repeat;
     uint64_t nr_train_passes;
@@ -64,10 +70,11 @@ typedef struct {
     bh_chain_params_t* spec_chain;
     uint64_t nr_dc_flush;
     void **dc_flush;
-    void (*pre_test)(void);
-    void (*pre_train)(void);
-    void (*pre_spec)(void);
-    void (*post_spec)(void);
+    cb_pre_test_t *pre_test;
+    cb_pre_train_t *pre_train;
+    cb_in_train_t *in_train;
+    cb_pre_spec_t *pre_spec;
+    cb_post_spec_t *post_spec;
     uint64_t nr_probes;
     char **probes_p;
     char *description;
