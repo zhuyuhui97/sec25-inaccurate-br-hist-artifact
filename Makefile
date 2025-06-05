@@ -4,7 +4,7 @@ DIR_ARCH_INCLUDE := arch/$(ARCH)/
 DIR_INCLUDE := include/ tests/ $(DIR_ARCH_INCLUDE)
 DIR_BUILD := build/
 
-EXFLAGS := -D$(TARGET) -DARCH_$(ARCH) $(addprefix -D,$(FLAGS))
+EXFLAGS := -DARCH_$(ARCH) $(addprefix -D,$(FLAGS))
 # CFLAGS += -static -O0 -g -pie $(addprefix -I,$(DIR_INCLUDE)) $(EXFLAGS)
 CFLAGS += -O0 -g -pie $(addprefix -I,$(DIR_INCLUDE)) $(EXFLAGS)
 

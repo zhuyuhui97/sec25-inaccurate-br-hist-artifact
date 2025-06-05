@@ -83,7 +83,7 @@ test_obj_t test_chimera = {
     .pre_spec = &t_empty,
     .nr_probes = 2,
     .probes_p = (char *[]){DUMMY_SECRET_P, &dummy_secret_invalid},
-    .description = "Train with {leak,safe} and test with safe"
+    .description = "Chimera"
 };
 
 run_obj_t run = {

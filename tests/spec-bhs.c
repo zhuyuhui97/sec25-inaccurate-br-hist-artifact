@@ -1,12 +1,3 @@
-/**
- * You can test with:
- * for i in $(seq 3 0x1 30); 
- * do 
- *   echo $i;
- *   taskset -c 0 build/main -v0x13a -i0 -c0 -f600 --mistrain-align=$i --mistrain-pass=1 -v0x1000c30 -e1 |grep Probe;
- * done
- */
-
 #include "tests.h"
 #include "spec-bhs.h"
 #include "jit_utils.h"
@@ -293,7 +284,7 @@ void mistrain()
     for (int i = 0; i < args.nr_evset; i++)
     for (int j = 0; j < mistrain_passes; j++)
     {
-        #if defined(zen4) || defined(rpi5)
+        #if !defined(DBG_NO_BH_PROMO)
         goto_chain(tramp_bcond->jit_mem->call_entry, bh_args_mistrain[i], &ib_ptr_empty, args.nr_for_bh, frbuf, DUMMY_SECRET_P, 1, (char**)argv_bcond_tt);
         goto_chain(tramp_bcond->jit_mem->call_entry, bh_args_mistrain[i], &ib_ptr_empty, args.nr_for_bh, frbuf, DUMMY_SECRET_P, 1, (char**)argv_bcond_nt);
         goto_chain(tramp_bcond->jit_mem->call_entry, bh_args_mistrain[i], &ib_ptr_empty, args.nr_for_bh, frbuf, DUMMY_SECRET_P, 1, (char**)argv_bcond_tt);
