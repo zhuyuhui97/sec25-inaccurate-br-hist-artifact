@@ -124,6 +124,7 @@ int main(int argc, char *argv[], char *envp[])
     }
 
     get_os_params();
+    syscall(CUST_SYSCALL_ENABLE_PMU_EL0);
     init_pmu();
 
     // Create an executable memory that filled by RET ops. These RET ops can be used by indirect branches in BH[n] as branch targets to populate the iBHB.
