@@ -38,7 +38,7 @@ static struct argp_option options[] =
     {"output",  'o',    "FILE",         0,      "Dump filename"},
     {"threshold", 't',  "THRESHOLD",    0,      "Threshold for F+R probes"},
     {"nr_bh",    'b',    "N",           0,      "Number of branch hints"},
-    {"sz_bcond", 's',   "N",            0,      "Size of branch condition offset"},
+    {"sz_bcond", 's',   "N",            0,      "Size of BHB-populating conditional branches, in instructions"},
     { 0 }
 };
 

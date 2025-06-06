@@ -1,3 +1,17 @@
+/*
+ * PoC Codes for Bias-Free Branch Predicion Exploitation
+ * 
+ * Thursday, June 5th 2025
+ *
+ * Yuhui Zhu - yuhui.zhu@santannapisa.it
+ * Alessandro Biondi - alessandro.biondi@santannapisa.it
+ *
+ * ReTiS Lab, Scuola Superiore Sant'Anna
+ * Pisa, Italy
+ * 
+ * This copy is distributed to ARM for vulnerability evaluation.
+ */
+
 #include <linux/types.h>
 #include "jit_utils.h"
 #include "c_snippets.h"
