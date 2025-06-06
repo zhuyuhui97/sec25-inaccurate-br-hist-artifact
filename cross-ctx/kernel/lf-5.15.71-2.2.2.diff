@@ -1,0 +1,39 @@
+diff --git a/Makefile b/Makefile
+index 4c06cbe89ece..4b9b06b6b24f 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1148,7 +1148,7 @@ export MODORDER := $(extmod_prefix)modules.order
+ export MODULES_NSDEPS := $(extmod_prefix)modules.nsdeps
+ 
+ ifeq ($(KBUILD_EXTMOD),)
+-core-y		+= kernel/ certs/ mm/ fs/ ipc/ security/ crypto/ block/
++core-y		+= kernel/ certs/ mm/ fs/ ipc/ security/ crypto/ block/ custom_syscall/
+ 
+ vmlinux-dirs	:= $(patsubst %/,%,$(filter %/, \
+ 		     $(core-y) $(core-m) $(drivers-y) $(drivers-m) \
+diff --git a/include/uapi/asm-generic/unistd.h b/include/uapi/asm-generic/unistd.h
+index 1c5fb86d455a..6f0900c8ad9b 100644
+--- a/include/uapi/asm-generic/unistd.h
++++ b/include/uapi/asm-generic/unistd.h
+@@ -880,8 +880,20 @@ __SYSCALL(__NR_memfd_secret, sys_memfd_secret)
+ #define __NR_process_mrelease 448
+ __SYSCALL(__NR_process_mrelease, sys_process_mrelease)
+ 
++#define __NR_biasscope_send 460
++__SYSCALL(__NR_biasscope_send, sys_biasscope_send)
++
++#define __NR_specbse_victim 461
++__SYSCALL(__NR_specbse_victim, sys_specbse_victim)
++
++#define __NR_specbhs_victim 462
++__SYSCALL(__NR_specbhs_victim, sys_specbhs_victim)
++
++#define __NR_enable_pmu_el0 463
++__SYSCALL(__NR_enable_pmu_el0, sys_enable_pmu_el0)
++
+ #undef __NR_syscalls
+-#define __NR_syscalls 449
++#define __NR_syscalls 464
+ 
+ /*
+  * 32 bit systems traditionally used different
