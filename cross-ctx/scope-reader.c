@@ -43,10 +43,6 @@ __attribute__((aligned(4096)))
 jit_populate_bhb_4args_t BH_n;
 // Monitor N_PROBES branches on given addresses (defined in offset_probes[]) with one Bx_prime for each.
 jit_bst_entry_blr_t Bx_prime[N_PROBES];
-#ifdef DBG_EVICT_BEFORE_INSERT
-// N_EVICTS_PER_PROBE branches for each Bx_prime to flush the corresponding BST entry.
-jit_bst_entry_blr_t BLR_evict[N_PROBES][N_EVICTS_PER_PROBE];
-#endif
 
 __attribute__((aligned(4096)))
 uint64_t array_timers[N_PROBES][RECV_MISPRED_TESTS];
@@ -96,12 +92,7 @@ int main()
     prep_snippets();
     NOP_PADDING(16);
 
-#ifdef DBG_EVICT_BEFORE_INSERT
-    // Flush the entry before creating one, no by default.
-    prep_cache_mgmt_invoke_list(tramp_ret, BLR_evict, Bx_prime);
-#else
     prep_cache_mgmt_invoke_list(tramp_ret, Bx_prime);
-#endif
     NOP_PADDING(16);
     prep_ibhb_populate_patterns();
     NOP_PADDING(16);
@@ -126,12 +117,6 @@ void do_biasscope()
         {
             for (int idx_to_maintain=0; idx_to_maintain<N_PROBES; idx_to_maintain++)
             {
-#ifdef DBG_EVICT_BEFORE_INSERT
-                // Flush the BST entry before creating, not mandatory here.
-                // Eviction also impedes creating a BST record, keep it disabled!
-                NOP_PADDING(16);
-                bst_record_evict(idx_to_maintain);
-#endif
                 NOP_PADDING(16);
                 // Create the non-biased record for current Bx_prime
                 bst_record_create(idx_to_maintain);
@@ -198,12 +183,6 @@ void prep_snippets()
     for (int i=0; i<N_PROBES; i++)
     {
         Bx_prime[i] = prep_aligned_snippets(BASE_BPU_MAINTAIN, offset_probes[i] & (~0xf), &jit_bst_entry_blr, offset_align, length, BST_IDX_MSB + 1, NULL);
-#ifdef DBG_EVICT_BEFORE_INSERT
-        for (int j=0; j<N_EVICTS_PER_PROBE; j++)
-        {
-            BLR_evict[i][j] = prep_aligned_snippets(BASE_BPU_MAINTAIN, offset_probes[i] & (~0xf), &jit_bst_entry_blr, offset_align, length, BST_IDX_MSB + 1);
-        }
-#endif
     }
 }
 

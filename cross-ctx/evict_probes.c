@@ -60,19 +60,10 @@ void prep_insert_invoke_list(void *tramp_ret, jit_bst_entry_blr_t probe_gadgets[
     }
 }
 
-#ifdef DBG_EVICT_BEFORE_INSERT
-void prep_cache_mgmt_invoke_list(void *tramp_ret,jit_bst_entry_blr_t evict_gadgets[N_PROBES][N_EVICTS_PER_PROBE], jit_bst_entry_blr_t probe_gadgets[N_PROBES])
-{
-    prep_evict_invoke_list(tramp_ret, evict_gadgets);
-    prep_insert_invoke_list(tramp_ret, probe_gadgets);
-}
-#else
 void prep_cache_mgmt_invoke_list(void *tramp_ret, jit_bst_entry_blr_t probe_gadgets[N_PROBES])
 {
     prep_insert_invoke_list(tramp_ret, probe_gadgets);
 }
-#endif
-
 
 void do_bst_mgmt(int invoke_list_len, jit_bst_entry_blr_t *invoke_list, void *param_list[])
 {
