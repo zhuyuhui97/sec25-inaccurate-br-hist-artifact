@@ -134,6 +134,7 @@ Probe access latency (average of 64 tests): 55
 --- Test 1: Train bcond to be TT and test whether we can evict the BTB record to make it NT
 Probe access latency (average of 64 tests): 56
 ```
+
 ### 2. `spec-bse`: Spectre-BSE Attack (Section 5.4)
 
 This module demonstrates the BST (Branch Status Table) eviction and its effect on the history-based branch prediction using a **Spectre-BSE** attack flow. This is tested only working on Cortex-A72, while ARM also reports it works on A73 and A75.
