@@ -27,11 +27,6 @@ enum BPU_CACHE_ACTION
 void do_bst_mgmt(int invoke_list_len, jit_bst_entry_blr_t *invoke_list, void *param_list[]);
 void bst_record_create(int probe_idx);
 void do_bpu_cache_evict(int probe_idx);
-#ifdef DBG_EVICT_BEFORE_INSERT
-void prep_cache_mgmt_invoke_list(void *ret_mem, jit_bst_entry_blr_t evict_gadgets[N_PROBES][N_EVICTS_PER_PROBE], jit_bst_entry_blr_t probe_gadgets[N_PROBES]);
-#else
 void prep_cache_mgmt_invoke_list(void *tramp_ret, jit_bst_entry_blr_t probe_gadgets[N_PROBES]);
-#endif
-
 
 #endif
