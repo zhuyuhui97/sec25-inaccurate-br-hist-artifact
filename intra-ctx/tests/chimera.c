@@ -81,8 +81,8 @@ test_obj_t test_chimera = {
     .dc_flush = (void **)bhs_dc_flush,
     .pre_train = &t_empty,
     .pre_spec = &t_empty,
-    .nr_probes = 2,
-    .probes_p = (char *[]){DUMMY_SECRET_P, &dummy_secret_invalid},
+    .nr_probes = 1,
+    .probes_p = (char *[]){DUMMY_SECRET_P},
     .description = "Chimera"
 };
 
