@@ -59,7 +59,8 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state)
 	switch (key)
 	{
         case 'e':
-            evict_addr[nr_evict_branches++] = (uint64_t)strtol(arg, NULL, 0);
+            evict_addr[nr_evict_branches++] = strtoull(arg, NULL, 16)&0xffffffffULL;
+            printf("Eviction address %d set to 0x%lx\n", nr_evict_branches, evict_addr[nr_evict_branches - 1]);
             break;
 		case ARGP_KEY_ARG:
 			break;
@@ -229,8 +230,9 @@ void prep_snippets()
     length = JIT_SNIPPET_LENGTH(jit_bst_entry_blr);
     for (int i=0; i<nr_evict_branches; i++)
     {
-        base = (void *)(evict_addr[i] & 0xffffffff);
+        base = (void *)(evict_addr[i]);
         Bx_evict[i] = prep_aligned_snippets(0, (uint64_t)base, &jit_bst_entry_blr, 0, length, BST_IDX_MSB + 1, NULL);
+        printf("Snippet %d prepared at %p\n", i, Bx_evict[i]);
     }
 }
 

@@ -130,7 +130,8 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state)
 	switch (key)
 	{
         case 'e':
-            evict_addr = (uint64_t)strtol(arg, NULL, 0);
+            evict_addr = strtoull(arg, NULL, 16)&0xffffffffULL;
+            printf("Eviction address set to 0x%lx\n", evict_addr);
             break;
 		case ARGP_KEY_ARG:
 			break;
