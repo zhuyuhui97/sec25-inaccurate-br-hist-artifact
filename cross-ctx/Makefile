@@ -1,6 +1,6 @@
 CROSS_COMPILE := aarch64-linux-gnu-
 CC := $(CROSS_COMPILE)gcc
-EXFLAGS := -D$(TARGET) $(addprefix -D,$(FLAGS))
+EXFLAGS := -D$(TARGET) $(addprefix -D,$(FLAGS)) -DDBG_PMU_EL0
 CFLAGS := -static -O0 -g -pie $(EXFLAGS)
 
 programs-all	:= spec-bse-demo-el1 spec-bhs-demo-el1 scope-writer scope-reader

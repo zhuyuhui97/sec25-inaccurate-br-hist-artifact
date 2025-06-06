@@ -248,16 +248,16 @@ void print_result()
     printf("Please ignore this result since there will be no difference before Spectre-BSE and after.\n");
     printf("\x1b[0m\n");
 
-    printf("Memory access latency (average of %d tests): \n", DEMO_TEST_ROUNDS_CACHE_LAT);
-    printf("slow access: %d\n", cycles_slow / DEMO_TEST_ROUNDS_CACHE_LAT);
-    printf("fast access: %d\n", cycles_fast / DEMO_TEST_ROUNDS_CACHE_LAT);
-    printf("\n");
+    // printf("Memory access latency (average of %d tests): \n", DEMO_TEST_ROUNDS_CACHE_LAT);
+    // printf("slow access: %d\n", cycles_slow / DEMO_TEST_ROUNDS_CACHE_LAT);
+    // printf("fast access: %d\n", cycles_fast / DEMO_TEST_ROUNDS_CACHE_LAT);
+    // printf("\n");
 
     printf("--- without Spectre-BSE ---\n");
-    __cycles_sum = 0;
-    for (int round = 0; round < DEMO_TEST_ROUNDS; round++)
-        __cycles_sum += results_mem_cycles[round];
-    printf("Probe access latency (average of %d tests): %d\n", DEMO_TEST_ROUNDS, __cycles_sum / DEMO_TEST_ROUNDS);
+    // __cycles_sum = 0;
+    // for (int round = 0; round < DEMO_TEST_ROUNDS; round++)
+    //     __cycles_sum += results_mem_cycles[round];
+    // printf("Probe access latency (average of %d tests): %d\n", DEMO_TEST_ROUNDS, __cycles_sum / DEMO_TEST_ROUNDS);
 #ifdef DBG_PMU_EL0
     __marks_sum = 0;
     for (int round = 0; round < DEMO_TEST_ROUNDS; round++)
@@ -266,10 +266,10 @@ void print_result()
 #endif
 
     printf("--- WITH Spectre-BSE ---\n");
-    __cycles_sum = 0;
-    for (int round = 0; round < DEMO_TEST_ROUNDS; round++)
-        __cycles_sum += results_mem_cycles_bse[round];
-    printf("Probe access latency (average of %d tests): %d\n", DEMO_TEST_ROUNDS, __cycles_sum / DEMO_TEST_ROUNDS);
+    // __cycles_sum = 0;
+    // for (int round = 0; round < DEMO_TEST_ROUNDS; round++)
+    //     __cycles_sum += results_mem_cycles_bse[round];
+    // printf("Probe access latency (average of %d tests): %d\n", DEMO_TEST_ROUNDS, __cycles_sum / DEMO_TEST_ROUNDS);
 #ifdef DBG_PMU_EL0
     __marks_sum = 0;
     for (int round = 0; round < DEMO_TEST_ROUNDS; round++)

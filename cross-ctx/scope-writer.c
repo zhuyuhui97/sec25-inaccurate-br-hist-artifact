@@ -15,7 +15,6 @@
 #include <sys/syscall.h>
 #include <unistd.h>
 #include "utils.h"
-#include "pmu_debug.h"
 #include "jit_snippets.h"
 
 #define BASE_BPU_MAINTAIN   VOIDPTR(0x8000000)
