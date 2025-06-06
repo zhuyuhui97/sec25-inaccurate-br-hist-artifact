@@ -1,0 +1,11 @@
+.vscode
+*.o
+*.d
+bst-demo
+scope-reader
+scope-writer
+spec-bse-demo
+spec-bse-demo-el1
+bhb-demo
+spec-bhs-demo
+spec-bhs-demo-el1
