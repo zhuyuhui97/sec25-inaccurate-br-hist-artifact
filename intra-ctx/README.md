@@ -1,4 +1,4 @@
-# Artifact code for paper "Exploiting Inaccurate Branch History in Side-Channel Attacks" - user-mode intra-process PoCs
+# Artifact code for paper "Exploiting Inaccurate Branch History in Side-Channel Attacks" - User-Mode Intra-Process PoCs
 
 This artifact contains PoC codes demonstrating the vulnerable mechanism and attack flows described in the paper using intra-mode attack processes. Note they don't mount a practical attack, just demonstrating the exploited primitives and the corresponding microarchitectural behaviors.
 
@@ -32,6 +32,7 @@ make clean
 ```bash
 make TEST=<test_name> ARCH=aarch64 CROSS_COMPILE=aarch64-linux-gnu-
 ```
+You will need the `aarch64-linux-gnu-gcc` toolchain installed on your system. This can typically be done via your package manager (e.g., `apt install gcc-aarch64-linux-gnu` on Debian-based systems).
 
 **For x86_64 (native compilation):**
 ```bash
@@ -39,10 +40,10 @@ make TEST=<test_name> ARCH=amd64
 ```
 
 **Available test names:**
-- `pht-idx`: BTB/PHT mistraining experiments
-- `spec-bse`: Spectre-BSE attack demonstration  
-- `spec-bhs`: Spectre-BHS attack demonstration
-- `chimera`: Spectre-BHS attack demonstration using Chimera gadget
+- `pht-idx`: BTB/PHT mistraining experiments (Sec. 3.3)
+- `spec-bse`: Spectre-BSE attack demonstration (Sec. 5.4)
+- `spec-bhs`: Spectre-BHS attack demonstration (Sec. 6.2)
+- `chimera`: Spectre-BHS attack demonstration using Chimera gadget (Sec. 7)
 
 The executable will be generated as `build/main`.
 
@@ -119,7 +120,7 @@ $ taskset -c 3 build/main -c100 -v0xc000c30 -e32 --mistrain-align=24 --mistrain-
 
 **Output:**
 
-The output includes the average probe access latency for the FLUSH+RELOAD cache probe. A slow access indicates that the memory load is skipped due to the branch is taken, while a fast access indicates that the memory load is executed because the branch is not taken architecturally or speculatively.
+The output includes two sub-tests, while the program monitors the access latency for the FLUSH+RELOAD cache probe and prints its average value of each sub-test. A slow access indicates that the memory load is skipped due to the branch is taken, while a fast access indicates that the memory load is executed because the branch is not taken architecturally or speculatively.
 
 Sample result on Cortex-A76 from *Example 1*:
 
@@ -135,6 +136,16 @@ Probe access latency (average of 64 tests): 55
 Probe access latency (average of 64 tests): 56
 ```
 
+**Result Interpretation:**
+- **Test 0** trains the conditional branch to be *not taken* (NT) in the PHT, but the architectural execution path makes it *taken*. 
+  - With *not taken* mistraining (Example 1): Fast access (~56ns) indicates speculative execution as *not taken*
+  - With *taken* mistraining (Example 2): Slow access (~147ns) indicates the branch direction is successfully reversed by mistraining
+
+- **Test 1** trains the conditional branch to be *taken* (TT) in the PHT, but the architectural execution path makes it *not taken*.
+  - With *not taken* mistraining (Example 1) or eviction with multiple branches (Example 3): Fast access (~56ns) indicates the branch direction is successfully reversed
+  - With *taken* mistraining (Example 2): Slow access (~147ns) indicates speculative execution as *taken*
+
+
 ### 2. `spec-bse`: Spectre-BSE Attack (Section 5.4)
 
 This module demonstrates the BST (Branch Status Table) eviction and its effect on the history-based branch prediction using a **Spectre-BSE** attack flow. This is tested only working on Cortex-A72, while ARM also reports it works on A73 and A75.
@@ -147,6 +158,7 @@ In this module, the *victim* `Bi_pred` is an indirect branch which jump target w
 ```bash
 taskset -c 6 build/main -i4 -f8 -e2 -v0xc000c30
 ```
+
 **Output:**
 This module includes three sub-tests, including a standard Spectre-v2 with all `BH[n]` being initialized to non-biased, a similar one that tries to perform Spectre-v2 with different branch histories, and a mis-speculation caused by Spectre-BSE and consequent BHB confusion.
 The output includes the average access latency of the memory address dereferenced by `t_leak` and `t_alt`, respectively.
@@ -163,6 +175,12 @@ Probe access latency (average of 64 tests): 384 201
 --- Test 2: Different BH with Spectre-BSE
 Probe access latency (average of 64 tests): 226 216
 ```
+
+**Result Interpretation:**
+
+- **Test 0 and Test 1** expect `t_leak` and `t_alt` to be speculated, respectively. The two latency values reflect the speculative execution of these two targets. With correct settings, we should see a fast access (~216ns on Cortex-A72) corresponding to `t_leak` in Test 0 and `t_alt` in Test 1.
+- **Test 2** demonstrates the effect of Spectre-BSE, where branch history confusion leads to a fast access for `t_leak`. This indicates that while the complete branch history should lead to speculating `t_alt`, the branch history confusion caused by BST eviction leads to mis-speculation of `t_leak` instead, resulting in a fast access for `t_leak` and a slow access for `t_alt`.
+
 ### 3. `spec-bhs`: Spectre-BHS Attack (Section 6.2)
 
 This module demonstrates Branch History Speculative Update feature and its effect on the history-based branch prediction using a **Spectre-BHS** attack flow.
@@ -194,9 +212,11 @@ taskset -c 3 /tmp/main -c100 -v0xc000c30 -e24 --mistrain-align=24 --mistrain-pas
 The output includes the average probe access latencies for the FLUSH+RELOAD cache probes, similar to `spec-bse`.
 When `DBG_JMP_LATENCY` is enabled, it also includes the branch latency of `Bi_pred`. which can indicate. This helps to distinguish branch stall (longer latency) or correct prediction(shorter latency) when no mistraining is detected.
 
-Sample results:
+**Sample results:**
 
-Result without `--mistrain-taken` on Cortex-A76:
+**Result without `--mistrain-taken` on Cortex-A76:**
+In this case, `Bx_prime` is mistrained to be biased to *taken*, consequently leading to `t_leak` being mis-speculated and the first probe showing lower latency.
+
 ```plaintext
 Memory access latency (average of 64 tests): 
 slow access: 148
@@ -213,7 +233,10 @@ Probe access latency (average of 64 tests): 57 142
 Probe access latency (average of 64 tests): 57 150
 ```
 
-Result with `--mistrain-taken` on Cortex-A76:
+
+**Result with `--mistrain-taken` on Cortex-A76:**
+Similar to the previous case, `Bx_prime` is mistrained to be biased to *not-taken*, which causes `t_alt` to be mis-speculated, resulting in the second probe showing lower latency.
+
 ```plaintext
 Memory access latency (average of 64 tests): 
 slow access: 147
@@ -230,7 +253,9 @@ Probe access latency (average of 64 tests): 142 56
 Probe access latency (average of 64 tests): 142 56
 ```
 
-Result with `DBG_JMP_LATENCY` and `DBG_NO_BH_PROMO` enabled on Zen4. *"Test 3"* refers to the corresponding experiment in Appendix C:
+**Result with `DBG_JMP_LATENCY` and `DBG_NO_BH_PROMO` enabled on Zen4, *"Test 3"* refers to the corresponding experiment in Appendix C:**
+As discussed in Appendix C, Test 3 demonstrates a unique behavior where, while we cannot observe `t_leak` or `t_alt` being speculated, the branch latency of `Bi_pred` is significantly shorter than other tests (25ns vs. >500ns), indicating that the BPU has made a correct prediction to its architectural target `t_empty` due to a unique BHB value generated by the BTB/PHT eviction.
+
 ```plaintext
 Memory access latency (average of 64 tests): 
 slow access: 273
@@ -246,6 +271,7 @@ Branch latency (average of 64 tests): 901
 Branch latency (average of 64 tests): 25
 ```
 
+
 ### 4. **`chimera`** - Chimera snippet and the mistrain strategies (Section 7)
 
 This module demonstrates how to induce a partial PC-based branch prediction using a Chimera snippet in C language.
@@ -260,7 +286,7 @@ taskset -c 3 build/main -c100 -v0xc0000150
 
 **Output:**
 
-The output is similar to the `pht-idx` module. The output on Cortex-A76 is as follows:
+The output is similar to the `pht-idx` module. When we successfully induce mis-speculation toward not-taken, we should observe a lower latency corresponding to speculative execution of the memory load instruction. The output on Cortex-A76 is as follows:
 
 ```plaintext
 Memory access latency (average of 64 tests): 
@@ -269,5 +295,5 @@ fast access: 55
 threshold: 73
 
 --- Test 0: Chimera
-Probe access latency (average of 64 tests): 58 150
+Probe access latency (average of 64 tests): 58
 ```
