@@ -1,7 +1,7 @@
 CC := $(CROSS_COMPILE)gcc
 
 DIR_ARCH_INCLUDE := arch/$(ARCH)/
-DIR_INCLUDE := ../user-mode/include/ ../user-mode/$(DIR_ARCH_INCLUDE)
+DIR_INCLUDE := ../intra-ctx/include/ ../intra-ctx/$(DIR_ARCH_INCLUDE)
 
 EXFLAGS := -DARCH_$(ARCH)
 # CFLAGS += -static -O0 -g -pie $(addprefix -I,$(DIR_INCLUDE)) $(EXFLAGS)
