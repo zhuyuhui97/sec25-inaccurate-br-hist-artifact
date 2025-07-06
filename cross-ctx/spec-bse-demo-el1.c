@@ -16,6 +16,7 @@
 #include <time.h>
 #include <fcntl.h>
 #include <argp.h>
+#include <linux/mman.h>
 #include "utils.h"
 #include "jit_snippets.h"
 #include "target.h"
