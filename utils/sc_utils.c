@@ -4,6 +4,7 @@
 #include <time.h>
 #include <stdint.h>
 #include <time.h>
+#include <linux/mman.h>
 #include "jit_utils.h"
 
 char *frbuf;
