@@ -93,6 +93,12 @@ This module uses *conditional branches* to fill the BHB, please use `-c` to spec
 
 **BHB population method:** Conditional branches (`-c` parameter).
 
+**Debugging flags:**
+This module requires several compiling flags to control the behavior of the mistraining snippets and branch history manipulation. You may use them in the `make` command to enable the corresponding features:
+
+- `DBG_MISTRAIN_NO_BTB_PROMOTE`: This flag masks out the extra executions of the mistraining snippet using different branch histories before the execution of desired mistrainings. We found that, on some processors like Cortex-A76 and Zen4, enabling this is mandatory to make the mistraining branches able to influence the prediction of `Bx_prime`, which means that the branch prediction record is only promoted to the history-based mode when the branch is executed under different branch histories and different results. We enable this by default and you can disable it for debugging with `FLAGS=DBG_MISTRAIN_NO_BTB_PROMOTE`.
+- `DBG_ZEN4_BTB_EVICT`: On Zen4, we observed that only *a conditional branch crossing a 4 KB boundary* can evict a BTB/PHT entry and successfully trigger Straight-Line Speculation. When testing Straight-Line Speculation (and BTB/PHT eviction) on Zen4, please enable this flag with `FLAGS=DBG_ZEN4_BTB_EVICT`. This is not needed on other microarchitectures.
+
 **Additional parameters:**
 - `--mistrain-pass=NR_PASSES`: Number of mistraining passes.
 - `--mistrain-align=NR_BITS`: Alignment for mistraining. The mistraning snippets will be copied to addresses making the lower `NR_BITS` bits of the address identical to the victim.
@@ -190,22 +196,23 @@ While the victim branch `Bi_pred` follows the same logic as in `spec-bse`, we us
 **BHB population method:** For-loop and indirect branches (`-f` and `-i` parameters).
 
 **Debugging flags:**
-This module contains several compiling flags to control the behavior of the mistraining snippets and branch history manipulation. You may use them in the `make` command to enable the corresponding features:
+This module requires several compiling flags to control the behavior of the mistraining snippets and branch history manipulation. You may use them in the `make` command to enable the corresponding features:
 
 - `DBG_ARCH_BH` and `DBG_JMP_LATENCY`: These two flags are used for experiments mentioned in Appendix C. They add a additional speculation barrier between `Bx_prime` and `Bi_pred`, then measure the branch latency of `Bi_pred`. The latter one also adds outputs of branch latency of `Bx_prime` in the output.
-- `DBG_NO_BH_PROMO`: This flag masks out the extra executions of the mistraining snippet using different branch histories before the execution of desired mistrainings. We found that, on some processors like Cortex-A76 and Zen4, enabling this is mandatory to make the mistraining branches able to influence the prediction of `Bx_prime`, which means that the branch prediction record is only promoted to the history-based mode when the branch is executed under different branch histories and different results. We enable this by default and you can disable it for debugging.
+- `DBG_MISTRAIN_NO_BTB_PROMOTE`: This flag masks out the extra executions of the mistraining snippet using different branch histories before the execution of desired mistrainings. We found that, on some processors like Cortex-A76 and Zen4, enabling this is mandatory to make the mistraining branches able to influence the prediction of `Bx_prime`, which means that the branch prediction record is only promoted to the history-based mode when the branch is executed under different branch histories and different results. We enable this by default and you can disable it for debugging with `FLAGS=DBG_MISTRAIN_NO_BTB_PROMOTE`.
+- `DBG_ZEN4_BTB_EVICT`: On Zen4, we observed that only *a conditional branch crossing a 4 KB boundary* can evict a BTB/PHT entry and successfully trigger Straight-Line Speculation. When testing Straight-Line Speculation (and BTB/PHT eviction) on Zen4, please enable this flag with `FLAGS=DBG_ZEN4_BTB_EVICT`. This is not needed on other microarchitectures.
 
 **Sample setup:**
 
 Example 1: Spectre-BHS with single mistraining branch:
 ```bash
-taskset -c 3 /tmp/main -c100 -v0xc000c30 -e1 --mistrain-align=24 --mistrain-pass=1
-taskset -c 3 /tmp/main -c100 -v0xc000c30 -e1 --mistrain-align=24 --mistrain-pass=1 --mistrain-taken
+taskset -c 3 build/main -c100 -v0xc000c30 -e1 --mistrain-align=24 --mistrain-pass=1
+taskset -c 3 build/main -c100 -v0xc000c30 -e1 --mistrain-align=24 --mistrain-pass=1 --mistrain-taken
 ```
 
 Example 2: Spectre-BHS with multiple mistraining branches causing BTB/PHT eviction of `Bx_prime`:
 ```bash
-taskset -c 3 /tmp/main -c100 -v0xc000c30 -e24 --mistrain-align=24 --mistrain-pass=1 --mistrain-taken
+taskset -c 3 build/main -c100 -v0xc000c30 -e24 --mistrain-align=24 --mistrain-pass=1 --mistrain-taken
 ```
 
 **Output:**
