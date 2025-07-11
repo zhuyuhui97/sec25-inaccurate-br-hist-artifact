@@ -85,8 +85,11 @@ SNIPPET_DECLARE jit_bhs_evict
     cmp $0, %r11
 SNIPPET_ALIGN jit_bhs_evict
     jg jit_bhs_evict_target
+#if defined(DBG_ZEN4_BTB_EVICT)
+    padding_nop 0x2000 // for eviction on zen4
+#else
     padding_nop 8
-    // padding_nop 0x2000 // for eviction on zen4
+#endif
 jit_bhs_evict_target:
     padding_nop 0x40
     ret
