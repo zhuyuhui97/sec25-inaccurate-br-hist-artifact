@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <assert.h>
+#include <linux/mman.h>
 #include "jit_utils.h"
 #include "arch_defines.h"
 
