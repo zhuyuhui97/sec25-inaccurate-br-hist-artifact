@@ -159,7 +159,7 @@ void mistrain()
     for (int i = 0; i < args.nr_evset; i++)
     for (int j = 0; j < mistrain_passes; j++)
     {
-        #if defined(zen4) || defined(rpi5)
+        #if !defined(DBG_MISTRAIN_NO_BTB_PROMOTE)
         goto_chain(tramp_bcond->jit_mem->call_entry, bh_args_mistrain[i], &ib_ptr_empty, args.nr_for_bh, frbuf, DUMMY_SECRET_P, 1, (char**)argv_bcond_tt);
         goto_chain(tramp_bcond->jit_mem->call_entry, bh_args_mistrain[i], &ib_ptr_empty, args.nr_for_bh, frbuf, DUMMY_SECRET_P, 1, (char**)argv_bcond_nt);
         goto_chain(tramp_bcond->jit_mem->call_entry, bh_args_mistrain[i], &ib_ptr_empty, args.nr_for_bh, frbuf, DUMMY_SECRET_P, 1, (char**)argv_bcond_tt);

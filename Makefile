@@ -4,9 +4,7 @@ DIR_ARCH_INCLUDE := arch/$(ARCH)/
 DIR_INCLUDE := include/ tests/ $(DIR_ARCH_INCLUDE)
 DIR_BUILD := build/
 
-EXFLAGS := -DARCH_$(ARCH) $(addprefix -D,$(FLAGS))
-# CFLAGS += -static -O0 -g -pie $(addprefix -I,$(DIR_INCLUDE)) $(EXFLAGS)
-CFLAGS += -O0 -g -pie $(addprefix -I,$(DIR_INCLUDE)) $(EXFLAGS)
+CFLAGS += -O0 -g -static $(addprefix -I,$(DIR_INCLUDE)) -DARCH_$(ARCH) $(addprefix -D,$(FLAGS)) $(EXFLAGS) -Wno-error=incompatible-pointer-types
 
 ifneq (,$(wildcard tests/$(TEST).$(ARCH).S))
     TEST_SRC := tests/$(TEST).$(ARCH).S tests/$(TEST).c
