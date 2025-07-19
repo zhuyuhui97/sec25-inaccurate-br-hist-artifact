@@ -85,5 +85,5 @@ Written to dump.txt:
 ffffffffa211af40: f3 0f 1e fa 0f 1f 44 00 00 48 8b 57 60 48 8b 77   ......D..H.W`H.w
 ffffffffa211af50: 68 8b 7f 70 e9 f7 fe ff ff 0f 1f 80 00 00 00 00   h..p............
 ffffffffa211af60: 90 90 90 90 90 90 90 90 90 90 90 90 90 90 90 90   ................
-ffffffffa211af70: 66 0f 1f 00 0f 1f 44 00 00 8b 57 60 8b 77 58 8b   f.....D...W`.wX.dolo
+ffffffffa211af70: 66 0f 1f 00 0f 1f 44 00 00 8b 57 60 8b 77 58 8b   f.....D...W`.wX.
 ```

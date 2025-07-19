@@ -39,7 +39,8 @@ You will need the `aarch64-linux-gnu-gcc` toolchain installed on your system. Th
 make TEST=<test_name> ARCH=amd64
 ```
 
-**Available test names:**
+### Available test names:
+
 - `pht-idx`: BTB/PHT mistraining experiments (Sec. 3.3)
 - `spec-bse`: Spectre-BSE attack demonstration (Sec. 5.4)
 - `spec-bhs`: Spectre-BHS attack demonstration (Sec. 6.2)
@@ -47,12 +48,29 @@ make TEST=<test_name> ARCH=amd64
 
 The executable will be generated as `build/main`.
 
-**Optional build flags:**
-Some modules support additional flags for debugging or specific behaviors. You can pass these flags during the build process with appending `FLAGS="FLAG1 FLAG2 ..."` to the `make` command. For example:
+### Available compile switches
+
+Some modules support additional flags for debugging or specific behaviors. Here are the flags you can use in the `make` command:
+
+- `DBG_ZEN4_BTB_EVICT`: On Zen4, we observed that only *a conditional branch crossing a 4 KB boundary* can evict a BTB/PHT entry and successfully trigger Straight-Line Speculation. When testing BTB/PHT eviction on Zen4, please enable this flag with `FLAGS=DBG_ZEN4_BTB_EVICT`. This is not needed on other microarchitectures.
+- `DBG_ARCH_BH` and `DBG_JMP_LATENCY`: These two flags are used for experiments mentioned in Appendix C. They add a additional speculation barrier between `Bx_prime` and `Bi_pred`, then measure the branch latency of `Bi_pred`. The latter one also adds outputs of branch latency of `Bx_prime` in the output.
+- `DBG_MISTRAIN_NO_BTB_PROMOTE`: This flag masks out the extra executions of the mistraining snippet using different branch histories before the execution of desired mistrainings. We found that, on some processors like Cortex-A76 and Zen4, enabling this is mandatory to make the mistraining branches able to influence the prediction of `Bx_prime`, which means that the branch prediction record is only promoted to the history-based mode when the branch is executed under different branch histories and different results. We enable this by default and you can disable it for debugging with `FLAGS=DBG_MISTRAIN_NO_BTB_PROMOTE`.
+
+We will specify the required flags in the corresponding test modules below. You can pass these flags during the build process with appending `FLAGS="FLAG1 FLAG2 ..."` to the `make` command. For example:
 
 ```bash
 make TEST=spec-bhs ARCH=aarch64 CROSS_COMPILE=aarch64-linux-gnu- FLAGS="DBG_ARCH_BH DBG_JMP_LATENCY"
 ```
+
+### Native compiling on i.MX8 board
+
+On the i.MX8 board, we have noticed that the OS image released by NXP is missing static libraries that are used by our artifact build process. To build the artifact on the i.MX8 board, you should remove the `-static` flag from the `CFLAGS` in the `Makefile`. This will allow the build process to use dynamic libraries instead. 
+
+However, we have the following recommendations:
+
+- We strongly recommend cross-building our artifact on a PC as it is more reliable and reproducible. You can then push the built binary to the target board and run it there.
+- If you *have to* build natively on the target environment, and unless you have encountered issues with dynamic linking, we recommend keeping the `-static` flag in the `Makefile` to ensure a more reproducible memory layout.
+
 
 ## Usage
 
@@ -75,7 +93,12 @@ All tests share these command-line arguments:
 
 ### Running Tests
 
-**General execution pattern:**
+Before running the tests, please ensure that the program is pinned to a CPU core with the correct microarchitecture.
+You can check the microarchitecture of each CPU core by inspecting the contents of the `/proc/cpuinfo` file.
+
+Once you have identified an appropriate core, use the `taskset` command to pin the process to that specific CPU core.
+For example, to run the test on **CPU core 3**, you can use the following command:
+
 ```bash
 # Pin to specific CPU core for consistent results
 taskset -c <core_id> ./build/main [global_args] [test_specific_args]
@@ -91,11 +114,9 @@ In this module, the *victim* is a conditional branch jumping over a memory load.
 
 *BHB population method: Conditional branches (`-c` parameter).*
 
-#### Debugging flags
-This module requires several compiling flags to control the behavior of the mistraining snippets and branch history manipulation. You may use them in the `make` command to enable the corresponding features:
+#### Compile switches
 
-- `DBG_MISTRAIN_NO_BTB_PROMOTE`: This flag masks out the extra executions of the mistraining snippet using different branch histories before the execution of desired mistrainings. We found that, on some processors like Cortex-A76 and Zen4, enabling this is mandatory to make the mistraining branches able to influence the prediction of `Bx_prime`, which means that the branch prediction record is only promoted to the history-based mode when the branch is executed under different branch histories and different results. We enable this by default and you can disable it for debugging with `FLAGS=DBG_MISTRAIN_NO_BTB_PROMOTE`.
-- `DBG_ZEN4_BTB_EVICT`: On Zen4, we observed that only *a conditional branch crossing a 4 KB boundary* can evict a BTB/PHT entry and successfully trigger Straight-Line Speculation. When testing Straight-Line Speculation (and BTB/PHT eviction) on Zen4, please enable this flag with `FLAGS=DBG_ZEN4_BTB_EVICT`. This is not needed on other microarchitectures.
+- `DBG_ZEN4_BTB_EVICT`: Required for Zen4 when testing BTB/PHT eviction and Straight-Line Speculation.
 
 #### Additional parameters
 - `--mistrain-pass=NR_PASSES`: Number of mistraining passes.
@@ -203,9 +224,8 @@ While the victim branch `Bi_pred` follows the same logic as in `spec-bse`, we us
 #### Debugging flags
 This module requires several compiling flags to control the behavior of the mistraining snippets and branch history manipulation. You may use them in the `make` command to enable the corresponding features:
 
-- `DBG_ARCH_BH` and `DBG_JMP_LATENCY`: These two flags are used for experiments mentioned in Appendix C. They add a additional speculation barrier between `Bx_prime` and `Bi_pred`, then measure the branch latency of `Bi_pred`. The latter one also adds outputs of branch latency of `Bx_prime` in the output.
-- `DBG_MISTRAIN_NO_BTB_PROMOTE`: This flag masks out the extra executions of the mistraining snippet using different branch histories before the execution of desired mistrainings. We found that, on some processors like Cortex-A76 and Zen4, enabling this is mandatory to make the mistraining branches able to influence the prediction of `Bx_prime`, which means that the branch prediction record is only promoted to the history-based mode when the branch is executed under different branch histories and different results. We enable this by default and you can disable it for debugging with `FLAGS=DBG_MISTRAIN_NO_BTB_PROMOTE`.
-- `DBG_ZEN4_BTB_EVICT`: On Zen4, we observed that only *a conditional branch crossing a 4 KB boundary* can evict a BTB/PHT entry and successfully trigger Straight-Line Speculation. When testing Straight-Line Speculation (and BTB/PHT eviction) on Zen4, please enable this flag with `FLAGS=DBG_ZEN4_BTB_EVICT`. This is not needed on other microarchitectures.
+- `DBG_ARCH_BH` and `DBG_JMP_LATENCY`: Required for the experiment described in Appendix C (Example Usage 3 below).
+- `DBG_ZEN4_BTB_EVICT`: Required for Zen4 when testing BTB/PHT eviction.
 
 #### Example usage 1: Spectre-BHS with mistraining branches
 
