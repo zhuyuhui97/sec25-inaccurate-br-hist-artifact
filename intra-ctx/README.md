@@ -160,10 +160,15 @@ In this module, the *victim* `Bi_pred` is an indirect branch which jump target w
 
 **BHB population method:** For-loop and indirect branches (`-f` and `-i` parameters).
 
-**Example usage:**
+#### Example usage *(only available on Cortex-A72)*
+
+We recommend the following parameters for running the demo on Cortex-A72:
+
 ```bash
-taskset -c 6 build/main -i4 -f8 -e2 -v0xc000c30
+taskset -c 5 build/main -i4 -f8 -e2 -v0xc000c30
 ```
+
+This configuration initializes the BHB with 8 for-loop branches (`-f8`) and 4 indirect branches (`-i4`), and employs 2 eviction branches to manipulate the BHB value (`-e2`).
 
 **Output:**
 This module includes three sub-tests, including a standard Spectre-v2 with all `BH[n]` being initialized to non-biased, a similar one that tries to perform Spectre-v2 with different branch histories, and a mis-speculation caused by Spectre-BSE and consequent BHB confusion.
@@ -182,7 +187,7 @@ Probe access latency (average of 64 tests): 384 201
 Probe access latency (average of 64 tests): 226 216
 ```
 
-**Result Interpretation:**
+#### Result Interpretation
 
 - **Test 0 and Test 1** expect `t_leak` and `t_alt` to be speculated, respectively. The two latency values reflect the speculative execution of these two targets. With correct settings, we should see a fast access (~216ns on Cortex-A72) corresponding to `t_leak` in Test 0 and `t_alt` in Test 1.
 - **Test 2** demonstrates the effect of Spectre-BSE, where branch history confusion leads to a fast access for `t_leak`. This indicates that while the complete branch history should lead to speculating `t_alt`, the branch history confusion caused by BST eviction leads to mis-speculation of `t_leak` instead, resulting in a fast access for `t_leak` and a slow access for `t_alt`.
@@ -195,34 +200,43 @@ While the victim branch `Bi_pred` follows the same logic as in `spec-bse`, we us
 
 **BHB population method:** For-loop and indirect branches (`-f` and `-i` parameters).
 
-**Debugging flags:**
+#### Debugging flags
 This module requires several compiling flags to control the behavior of the mistraining snippets and branch history manipulation. You may use them in the `make` command to enable the corresponding features:
 
 - `DBG_ARCH_BH` and `DBG_JMP_LATENCY`: These two flags are used for experiments mentioned in Appendix C. They add a additional speculation barrier between `Bx_prime` and `Bi_pred`, then measure the branch latency of `Bi_pred`. The latter one also adds outputs of branch latency of `Bx_prime` in the output.
 - `DBG_MISTRAIN_NO_BTB_PROMOTE`: This flag masks out the extra executions of the mistraining snippet using different branch histories before the execution of desired mistrainings. We found that, on some processors like Cortex-A76 and Zen4, enabling this is mandatory to make the mistraining branches able to influence the prediction of `Bx_prime`, which means that the branch prediction record is only promoted to the history-based mode when the branch is executed under different branch histories and different results. We enable this by default and you can disable it for debugging with `FLAGS=DBG_MISTRAIN_NO_BTB_PROMOTE`.
 - `DBG_ZEN4_BTB_EVICT`: On Zen4, we observed that only *a conditional branch crossing a 4 KB boundary* can evict a BTB/PHT entry and successfully trigger Straight-Line Speculation. When testing Straight-Line Speculation (and BTB/PHT eviction) on Zen4, please enable this flag with `FLAGS=DBG_ZEN4_BTB_EVICT`. This is not needed on other microarchitectures.
 
-**Sample setup:**
+#### Example usage 1: Spectre-BHS with mistraining branches
 
-Example 1: Spectre-BHS with single mistraining branch:
 ```bash
+# (1) Cortex-A76, mistrain `Bx_prime` to be biased to not-taken
 taskset -c 3 build/main -c100 -v0xc000c30 -e1 --mistrain-align=24 --mistrain-pass=1
+# (2) Cortex-A76, mistrain `Bx_prime` to be biased to taken
 taskset -c 3 build/main -c100 -v0xc000c30 -e1 --mistrain-align=24 --mistrain-pass=1 --mistrain-taken
+# (3) Zen4, mistrain `Bx_prime` to be biased to not-taken
+taskset -c 3 build/main -c1200 -v0xc000c30 -e4 --mistrain-align=24 --mistrain-pass=2
+# (4) Zen4, mistrain `Bx_prime` to be biased to taken
+taskset -c 3 build/main -c1200 -v0xc000c30 -e2 --mistrain-align=24 --mistrain-pass=2 --mistrain-taken
+# (5) Gracemont/Redwood Cove/Crestmont, mistrain `Bx_prime` to be biased to not-taken
+taskset -c 3 build/main -c300 -v0xc000c30 -e1 --mistrain-align=18 --mistrain-pass=4
+# (6) Gracemont/Redwood Cove/Crestmont, mistrain `Bx_prime` to be biased to taken
+taskset -c 3 build/main -c300 -v0xc000c30 -e1 --mistrain-align=18 --mistrain-pass=4 --mistrain-taken
 ```
 
-Example 2: Spectre-BHS with multiple mistraining branches causing BTB/PHT eviction of `Bx_prime`:
-```bash
-taskset -c 3 build/main -c100 -v0xc000c30 -e24 --mistrain-align=24 --mistrain-pass=1 --mistrain-taken
-```
+This configuration initializes given number of conditional branches (`-c<value>`) and employs one or multiple eviction branches to manipulate the BHB value (`-e<value>`). The `--mistrain-align` parameter specifies the address alignment (in bits) for placing mis-training branches so they share lower address bits with the victim branch, creating conflicts in the branch prediction structures. The `--mistrain-pass` parameter specifies how many times the mis-training snippet is executed.
+
+However, due to the different implementations of BPUs across different microarchitectures, the optimal parameters can vary significantly. You can also experiment with different values to find the optimal settings for your specific target.
 
 **Output:**
-The output includes the average probe access latencies for the FLUSH+RELOAD cache probes, similar to `spec-bse`.
-When `DBG_JMP_LATENCY` is enabled, it also includes the branch latency of `Bi_pred`. which can indicate. This helps to distinguish branch stall (longer latency) or correct prediction(shorter latency) when no mistraining is detected.
 
-**Sample results:**
+The victim snippet in `spec-bse` allows two architectural execution paths:
+- `Bx_prime` not taken, and `Bi_pred` jumps to `t_leak`;
+- `Bx_prime` taken, and `Bi_pred` jumps to `t_alt`.
 
-**Result without `--mistrain-taken` on Cortex-A76:**
-In this case, `Bx_prime` is mistrained to be biased to *taken*, consequently leading to `t_leak` being mis-speculated and the first probe showing lower latency.
+The output includes the average probe access latencies for the FLUSH+RELOAD cache probes, similar to `spec-bse`. Here we provide two samples from Cortex-A76. 
+
+When executing *without `--mistrain-taken`*, `Bx_prime` is mistrained to be biased toward *not taken*. In Test 0 and Test 1, while `Bx_prime` is *architecturally taken but transiently not taken*, this leads `Bi_pred` to mis-speculate `t_leak`. Therefore, you may observe the first probe showing lower latency.
 
 ```plaintext
 Memory access latency (average of 64 tests): 
@@ -234,15 +248,10 @@ threshold: 74
 Probe access latency (average of 64 tests): 55 74
 --- Test 1: Train Bc_prime biased to NT and test with TT
 Probe access latency (average of 64 tests): 56 78
---- Test 2: Train Bc_prime biased to TT and test with NT
-Probe access latency (average of 64 tests): 57 142
---- Test 3: Train Bc_prime biased to NT and test with NT
-Probe access latency (average of 64 tests): 57 150
+// Test 2 and Test 3 are omitted for brevity
 ```
 
-
-**Result with `--mistrain-taken` on Cortex-A76:**
-Similar to the previous case, `Bx_prime` is mistrained to be biased to *not-taken*, which causes `t_alt` to be mis-speculated, resulting in the second probe showing lower latency.
+Conversely, when executing *with `--mistrain-taken`*, `Bx_prime` is mistrained to be biased toward taken. *In Test 2 and Test 3*, while `Bx_prime` is *architecturally not taken but transiently taken*, this leads `Bi_pred` to mis-speculate `t_alt`. Therefore, you may observe the second probe showing lower latency.
 
 ```plaintext
 Memory access latency (average of 64 tests): 
@@ -250,18 +259,59 @@ slow access: 147
 fast access: 56
 threshold: 74
 
---- Test 0: Train Bc_prime biased to TT and test with TT
-Probe access latency (average of 64 tests): 150 55
---- Test 1: Train Bc_prime biased to NT and test with TT
-Probe access latency (average of 64 tests): 147 56
+
+// Test 0 and Test 1 are omitted for brevity
 --- Test 2: Train Bc_prime biased to TT and test with NT
 Probe access latency (average of 64 tests): 142 56
 --- Test 3: Train Bc_prime biased to NT and test with NT
 Probe access latency (average of 64 tests): 142 56
 ```
 
-**Result with `DBG_JMP_LATENCY` and `DBG_NO_BH_PROMO` enabled on Zen4, *"Test 3"* refers to the corresponding experiment in Appendix C:**
-As discussed in Appendix C, Test 3 demonstrates a unique behavior where, while we cannot observe `t_leak` or `t_alt` being speculated, the branch latency of `Bi_pred` is significantly shorter than other tests (25ns vs. >500ns), indicating that the BPU has made a correct prediction to its architectural target `t_empty` due to a unique BHB value generated by the BTB/PHT eviction.
+*When `DBG_JMP_LATENCY` is enabled, it also includes the branch latency of `Bi_pred`. This helps to distinguish branch stall (longer latency) or correct prediction(shorter latency) when no mistraining is detected.*
+
+
+#### Example usage 2: Spectre-BHS with multiple mistraining branches causing BTB/PHT eviction of `Bx_prime`
+
+```bash
+# Cortex-A76
+taskset -c 3 build/main -c100 -v0xc000c30 -e5 --mistrain-align=24 --mistrain-pass=1 --mistrain-taken
+```
+
+***Note for Zen4:** The compile switch `FLAGS=DBG_ZEN4_BTB_EVICT` is mandatory to demonstrate the BTB/PHT eviction behavior.*
+
+**Output:**
+The output is similar to the previous example. However, in Test 0 and 1 of this sample, `t_alt` should be speculated since Straight-Line Speculation is triggered **by** `Bx_prime`. Therefore, you may observe the **second** probe showing lower latency.
+
+```plaintext
+Memory access latency (average of 64 tests): 
+slow access: 207
+fast access: 88
+threshold: 111
+
+--- Test 0: Train Bc_prime biased to TT and test with TT
+Probe access latency (average of 64 tests): 98 162
+--- Test 1: Train Bc_prime biased to NT and test with TT
+Probe access latency (average of 64 tests): 87 169
+// Test 2 and Test 3 are omitted for brevity
+```
+
+#### Example usage 3: (Appendix C) BTB/PHT eviction on Zen4, with `DBG_JMP_LATENCY`, `DBG_ZEN4_BTB_EVICT`, and `DBG_ARCH_BH` enabled
+
+As we described in Appendix C, BHB on Zen 4 omits never-taken conditional branches, thus evicting the BTB/PHT entry of `Bx_prime` and making it *unable* to be confused with *not taken*, but instead creates a unique *not recorded* state. Unlike the previously discussed Branch History Speculation behaviors, this has an architectural effect which is observable outside the speculation window.
+
+When placing a speculation barrier between the BHB-initializing branches and the `Bi_pred`, we are not able to observe `t_leak` or `t_alt` being speculated, but the branch latency of `Bi_pred` is significantly shorter than in other tests (25ns vs. >500ns), indicating that the BPU has made a correct prediction to its architectural target `t_empty` due to a unique BHB value generated by the BTB/PHT eviction.
+
+You may compile and run the code with the following commands:
+
+```bash
+make TEST=spec-bhs ARCH=amd64 FLAGS="DBG_JMP_LATENCY DBG_ZEN4_BTB_EVICT DBG_ARCH_BH"
+# Tested on Zen4
+taskset -c 3 build/main -c1200 -v0xc000c30 -e24 --mistrain-align=24 --mistrain-pass=2 --mistrain-taken
+```
+
+Test 3 both trains `Bx_prime` with *not taken* and then tests with *not taken*. As discussed above, the output reveals that both cache probes for `t_leak` and `t_alt` are slow, but the branch latency of `Bi_pred` is significantly shorter than in other tests, indicating a correct prediction to the architectural target `t_empty`.
+
+This further indicates that the *not taken* `Bx_prime` is recorded under a different policy before and after the eviction, causing the BPU to select a different record based on different BHB values.
 
 ```plaintext
 Memory access latency (average of 64 tests): 
@@ -273,6 +323,7 @@ threshold: 77
 --- Test 3: Train Bc_prime biased to NT and test with NT
 Probe access latency (average of 64 tests): 299 266
 // ...
+--- Test 2: Train Bc_prime biased to TT and test with NT
 Branch latency (average of 64 tests): 901 
 --- Test 3: Train Bc_prime biased to NT and test with NT
 Branch latency (average of 64 tests): 25
@@ -288,7 +339,12 @@ This module demonstrates how to induce a partial PC-based branch prediction usin
 **Sample setup:**
 
 ```bash
+# Cortex-A76
 taskset -c 3 build/main -c100 -v0xc0000150
+# Zen4
+taskset -c 3 build/main -c1200 -v0xc0000150
+# Gracemont/Redwood Cove/Crestmont
+taskset -c 3 build/main -c300 -v0xc0000150
 ```
 
 **Output:**
