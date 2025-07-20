@@ -72,12 +72,31 @@ On Cortex-A72, the inter-process BiasScope attack is not effective with Spectre-
 mitigations=off
 ```
 
-#### Usage
+### Usage 1: Receiving from a kernel-space sender
 
-Run `scope-reader` and `scope-writer` simultaneously on the same CPU core:
+To use the `scope-reader` with a **kernel-space sender**, follow these steps:
+
+- Build the Linux kernel with the custom syscall handlers, as described in the *Building the artifact* section.
+- Build the `scope-reader` **without** the `DBG_RECV_FROM_USERSPACE` flag.
+Disabling the Spectre-v2 mitigation in the Linux kernel is **optional**, as the current implementation (as of July 2025) does not reset the Branch Prediction Unit (BPU) during context switches.
+
+Then run the `scope-reader` on a selected CPU core:
 
 ```bash
-taskset -c 5 scope-reader & taskset -c 5 scope-writer
+taskset -c 5 ./scope-reader
+```
+
+### Usage 2: Receiving from a user-space sender
+
+To use the `scope-reader` with a **user-space sender**, follow these steps:
+
+- Build the `scope-reader` **with** the `DBG_RECV_FROM_USERSPACE` flag.
+- Disable the Spectre-v2 mitigation in the Linux kernel.
+
+Then run both `scope-reader` and `scope-writer` simultaneously on the same CPU core:
+
+```bash
+taskset -c 5 ./scope-reader & taskset -c 5 ./scope-writer
 ```
 
 #### Expected results
@@ -98,6 +117,8 @@ Upon successful construction of the BST side channel, the dummy secret should be
 
 // ......
 ```
+
+*BUG: We have identified a bug in our kernel-space sender implementation: the dummy secret byte is sent in reversed order. This does not affect the functionality of the attack but may cause confusion when interpreting the output. We plan to address this issue in a future update.*
 
 Note that the side channel may exhibit some noise due to interference from other hardware or software components. This interference is expected and unavoidable in a real-world environment.
 
